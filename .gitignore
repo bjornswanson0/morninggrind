@@ -1,0 +1,14 @@
+# OS junk
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editors
+.vscode/
+.idea/
+
+# Netlify local state
+.netlify/
+
+# Node (not used today, but just in case)
+node_modules/
