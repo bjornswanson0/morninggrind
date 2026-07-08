@@ -12,3 +12,6 @@ desktop.ini
 
 # Node (not used today, but just in case)
 node_modules/
+
+# Local backup task log (rewrites itself every 15 min — noise)
+tools/backup.log
