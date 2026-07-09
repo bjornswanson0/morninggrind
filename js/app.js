@@ -55,6 +55,7 @@ function ensureLog(k){
 // Resolve the effective exercise for slot i (applies any swap chosen today)
 function addedFor(k){ return (LOGS[k] && LOGS[k].addedEx) || []; }
 function effList(){ return session.ex.concat(addedFor(todayKey)); }
+function isRemoved(i){ return !!(LOGS[todayKey] && LOGS[todayKey].removedEx && LOGS[todayKey].removedEx[i]); }
 function resolvedEx(i){
   const base = session.ex;
   if(i >= base.length){
@@ -124,7 +125,9 @@ function viewToday(){
   const log = ensureLog(todayKey);
   const o = openerFor(today);
   let totT=0, totD=0;
+  const removedList=[];
   const rows = effList().map((_,i)=>{
+    if(isRemoved(i)){ removedList.push({i, name:resolvedEx(i).name}); return ''; }
     const e = resolvedEx(i);
     const tg=target(e), done=Math.min(log.sets[i]||0,tg); totT+=tg; totD+=done;
     const dots = Array.from({length:tg},(_,j)=>`<span class="dot ${j<done?'on':''}" data-ex="${i}" data-dot="${j}"></span>`).join('');
@@ -186,6 +189,7 @@ function viewToday(){
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       ${rows}
       <button class="wk-add" id="addEx">＋ Add an exercise</button>
+      ${removedList.length?`<div class="removed-note">🗑️ Removed: ${removedList.map(r=>`<button data-restore="${r.i}">${esc(r.name)} ↩︎</button>`).join('')}</div>`:''}
     </div>
     <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?'✅ Completed — nice work':'Mark Workout Complete'}</button>
     ${log.done?debriefCardHTML(log):''}
@@ -205,7 +209,7 @@ function wireToday(){
   document.querySelectorAll('.dot').forEach(dot=>{
     dot.onclick = ()=>{ const i=+dot.dataset.ex, j=+dot.dataset.dot;
       log.sets[i] = (j+1===log.sets[i]) ? j : j+1;
-      log.done = effList().every((e,k)=> (log.sets[k]||0) >= target(resolvedEx(k)));
+      log.done = effList().every((e,k)=> isRemoved(k) || (log.sets[k]||0) >= target(resolvedEx(k)));
       save(); render(); };
   });
   document.querySelectorAll('[data-swap]').forEach(b=> b.onclick=()=>{
@@ -218,8 +222,10 @@ function wireToday(){
   document.querySelectorAll('[data-timer]').forEach(b=> b.onclick=()=>startRest(90));
   document.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>openExEdit(+b.dataset.edit));
   { const ae=$('#addEx'); if(ae) ae.onclick=openExAdd; }
+  document.querySelectorAll('[data-restore]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.restore;
+    if(log.removedEx) delete log.removedEx[i]; save(); render(); toast('↩︎ Restored'); });
   $('#completeBtn').onclick = ()=>{
-    if(!log.done){ log.done=true; log.sets = effList().map((e,k)=>target(resolvedEx(k))); save(); render(); openDebrief(); }
+    if(!log.done){ log.done=true; log.sets = effList().map((e,k)=> isRemoved(k) ? (log.sets[k]||0) : target(resolvedEx(k))); save(); render(); openDebrief(); }
     else { log.done=false; save(); render(); toast('Marked incomplete'); }
   };
   const de = $('#dbEdit') || $('#dbAdd'); if(de) de.onclick = openDebrief;
@@ -301,7 +307,9 @@ function openExEdit(i){
       <div><div class="sheet-label">RPE</div><input id="exRpe" value="${esc(String(e.rpe||'-'))}" placeholder="9 or -" /></div>
     </div>
     <button class="btn btn-primary" id="exSave" style="margin-top:16px">Save exercise</button>
-    ${showRemove?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">${removeLabel}</button>`:''}
+    ${isAdded
+      ? `<button class="btn btn-ghost" id="exReset" style="margin-top:8px">🗑️ Remove exercise</button>`
+      : `${(e._custom||e._swapped)?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">↩︎ Reset to planned</button>`:''}<button class="btn btn-ghost" id="exRemove" style="margin-top:8px">🗑️ Remove from today</button>`}
     <button class="sheet-skip" id="exCancel">Cancel</button></div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
@@ -318,6 +326,9 @@ function openExEdit(i){
     if(isAdded){ if(log.addedEx) log.addedEx.splice(i-baseLen,1); if(log.sets) log.sets.splice(i,1); }
     else { if(log.customEx) delete log.customEx[i]; if(log.swaps) delete log.swaps[i]; }
     save(); render(); close(); toast(isAdded?'🗑️ Removed':'↩︎ Reset to planned'); };
+  const rm=q('#exRemove'); if(rm) rm.onclick=()=>{ const log=ensureLog(todayKey);
+    if(!log.removedEx) log.removedEx={}; log.removedEx[i]=1;
+    save(); render(); close(); toast('🗑️ Removed from today'); };
 }
 
 function openExAdd(){
@@ -787,18 +798,20 @@ async function openProfileEdit(){
     else { close(); loadProfileCard(); if(window.MGSync.reloadProfile) window.MGSync.reloadProfile(); toast('Profile saved ✅'); } };
 }
 function liftsSummary(it){
-  const swaps=it.swaps||{}, sets=it.sets||[], cust=(it.plan&&it.plan.ex)||{}, added=(it.plan&&it.plan.added)||[];
+  const swaps=it.swaps||{}, sets=it.sets||[], cust=(it.plan&&it.plan.ex)||{}, added=(it.plan&&it.plan.added)||[], removed=(it.plan&&it.plan.removed)||{};
   let base;
   if(it.plan && it.plan.custom && Array.isArray(it.plan.custom.ex)) base=it.plan.custom; // AI custom session
   else { const tag=it.plan&&it.plan.tag; base=(tag && typeof SESSIONS!=='undefined' && SESSIONS[tag]) ? SESSIONS[tag] : SPLIT[new Date(it.d+'T12:00').getDay()]; }
-  const list = base.ex.concat(added);
-  return list.map((e,i)=>{
+  const list = base.ex.concat(added), out=[];
+  list.forEach((e,i)=>{
     const isBase = i < base.ex.length;
-    if(isBase && cust[i]){ const c=cust[i]; const tg=(Number.isInteger(+c.sets)&&+c.sets>0)?+c.sets:1; return { name:c.name, load:c.load, done:Math.min(sets[i]||0,tg), tg }; }
+    if(isBase && removed[i]) return;
+    if(isBase && cust[i]){ const c=cust[i]; const tg=(Number.isInteger(+c.sets)&&+c.sets>0)?+c.sets:1; out.push({ name:c.name, load:c.load, done:Math.min(sets[i]||0,tg), tg }); return; }
     if(isBase){ const opts=optionsFor(e); const idx=swaps[i]||0; const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
-      const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; return { name:pick.name, load:pick.load, done:Math.min(sets[i]||0,tg), tg }; }
-    const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; return { name:e.name, load:e.load, done:Math.min(sets[i]||0,tg), tg };
+      const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; out.push({ name:pick.name, load:pick.load, done:Math.min(sets[i]||0,tg), tg }); return; }
+    const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; out.push({ name:e.name, load:e.load, done:Math.min(sets[i]||0,tg), tg });
   });
+  return out;
 }
 function feedCard(it, prof){
   const dObj=new Date(it.d+'T12:00');

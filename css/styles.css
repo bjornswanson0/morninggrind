@@ -144,6 +144,9 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .ex-edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .wk-add{width:100%; margin-top:14px; background:var(--soft); color:var(--blue3); border:1px dashed var(--line); border-radius:12px; padding:13px; font-weight:900; font-size:14px; cursor:pointer; transition:transform .12s, background .15s}
 .wk-add:active{transform:scale(.98); background:var(--panel)}
+.removed-note{margin-top:12px; font-size:12px; color:var(--muted); font-weight:800; display:flex; flex-wrap:wrap; gap:7px; align-items:center}
+.removed-note button{background:var(--soft); border:1px solid var(--line); color:var(--sub); font-weight:800; font-size:12px; padding:6px 11px; border-radius:999px; cursor:pointer}
+.removed-note button:active{transform:scale(.95)}
 .ex-swap{background:var(--soft); border:1px solid var(--line); font-size:15px; cursor:pointer; padding:5px 8px; border-radius:9px; transition:transform .12s, background .15s}
 .ex-swap:active{transform:scale(.9); background:var(--panel)}
 .swapped{font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--blue3); background:var(--soft); padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px}
