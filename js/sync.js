@@ -66,7 +66,9 @@
         LOGS[r.d]={ done:!!(cur.done||r.completed), sets:mergeSets(cur.sets,r.sets),
           swaps:Object.assign({}, r.swaps||{}, cur.swaps||{}), debrief:cur.debrief||r.debrief||undefined,
           sessionOverride: cur.sessionOverride || (r.plan&&r.plan.override) || undefined,
-          customSession: cur.customSession || (r.plan&&r.plan.custom) || undefined }; });
+          customSession: cur.customSession || (r.plan&&r.plan.custom) || undefined,
+          customEx: cur.customEx || (r.plan&&r.plan.ex) || undefined,
+          addedEx: cur.addedEx || (r.plan&&r.plan.added) || undefined }; });
       const wmap={}; (wts.data||[]).forEach(r=>wmap[r.d]=Number(r.lb)); WEIGHTS.forEach(w=>wmap[w.date]=w.w);
       WEIGHTS=Object.entries(wmap).map(([date,w])=>({date,w})).sort((a,b)=>a.date.localeCompare(b.date));
       const seen=new Set(PRS.map(p=>p.date+'|'+p.lift+'|'+p.w));
@@ -82,7 +84,7 @@
     if(!USER) return; const u=uid();
     try{
       const dayRows=Object.entries(LOGS).map(([d,v])=>({ user_id:u, d, completed:!!v.done, sets:v.sets||[], swaps:v.swaps||{}, debrief:v.debrief||null,
-        plan:{ title:titleFor(d), tag:tagFor(d), override:v.sessionOverride||null, custom:v.customSession||null }, updated_at:new Date().toISOString() }));
+        plan:{ title:titleFor(d), tag:tagFor(d), override:v.sessionOverride||null, custom:v.customSession||null, ex:v.customEx||null, added:v.addedEx||null }, updated_at:new Date().toISOString() }));
       if(dayRows.length) await SB.from('days').upsert(dayRows,{ onConflict:'user_id,d' });
       const wRows=WEIGHTS.map(w=>({ user_id:u, d:w.date, lb:w.w }));
       if(wRows.length) await SB.from('weights').upsert(wRows,{ onConflict:'user_id,d' });
@@ -100,6 +102,9 @@
   }
   const social = {
     async myProfile(){ const { data }=await SB.from('profiles').select('*').eq('id',uid()).maybeSingle(); return data; },
+    async userProfile(id){ const { data }=await SB.from('profiles').select('*').eq('id',id).maybeSingle(); return data; },
+    // a single user's completed workouts (RLS: visible if you follow them, or it's you)
+    async userDays(id){ const { data }=await SB.from('days').select('*').eq('user_id',id).eq('completed',true).order('d',{ascending:false}).limit(30); return data||[]; },
     // returns null on success, or a friendly error string
     async saveProfile(p){
       if(!uid()) return 'You’re not signed in yet — sign in first.';
@@ -140,7 +145,7 @@
       const profiles={}; (pf||[]).forEach(p=>profiles[p.id]=p); return { items:days||[], profiles }; }
   };
 
-  window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER,
+  window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER, myId:()=>uid(),
     displayName:()=> (PROFILE&&PROFILE.display_name) || (USER&&USER.email ? USER.email.split('@')[0] : ''),
     reloadProfile:async()=>{ await loadProfile(); if(typeof render==='function') render(); } }, social);
 

@@ -14,7 +14,7 @@ const fmtLoad = (l) => /^\+?\d+(\.\d+)?$/.test(String(l)) ? l+' lb' : String(l);
 const SPOTIFY_ICON = `<svg class="sp" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="12" cy="12" r="12" fill="#1DB954"/><path fill="#fff" d="M17.6 10.8c-2.9-1.7-7.7-1.9-10.5-1.05-.45.14-.93-.12-1.06-.57-.14-.45.12-.93.57-1.06 3.2-.97 8.5-.78 11.83 1.2.4.24.53.76.29 1.16-.24.4-.76.53-1.13.32zm-.1 2.6c-.2.33-.63.44-.96.24-2.42-1.49-6.11-1.92-8.98-1.05-.37.11-.76-.1-.87-.47-.11-.37.1-.76.47-.87 3.28-1 7.35-.52 10.13 1.19.32.2.43.63.21.96zm-1.11 2.5c-.16.26-.5.35-.76.19-2.11-1.29-4.77-1.58-7.9-.87-.3.07-.6-.12-.67-.42-.07-.3.12-.6.42-.67 3.42-.78 6.37-.44 8.74 1 .27.16.35.5.17.77z"/></svg>`;
 
 const esc = s => String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function avatarEl(prof, cls){ const sz={prof:52, fc:44, disc:38}[cls]||40;
+function avatarEl(prof, cls){ const sz={prof:52, fc:44, disc:38, hero:78}[cls]||40;
   if(prof && prof.avatar) return `<img class="av" src="${prof.avatar}" alt="" style="width:${sz}px;height:${sz}px" />`;
   return `<span class="${cls}-emoji">${(prof&&prof.emoji)||'💪'}</span>`; }
 function resizeImage(file, size, cb){
@@ -48,13 +48,23 @@ function ensureLog(k){
   if(!LOGS[k]) LOGS[k] = { done:false, sets:[] };
   if(!LOGS[k].sets) LOGS[k].sets = [];
   if(!LOGS[k].swaps) LOGS[k].swaps = {};
-  const ex = sessionFor(k).ex;
-  while(LOGS[k].sets.length < ex.length) LOGS[k].sets.push(0);
+  const n = sessionFor(k).ex.length + ((LOGS[k].addedEx&&LOGS[k].addedEx.length)||0);
+  while(LOGS[k].sets.length < n) LOGS[k].sets.push(0);
   return LOGS[k];
 }
 // Resolve the effective exercise for slot i (applies any swap chosen today)
+function addedFor(k){ return (LOGS[k] && LOGS[k].addedEx) || []; }
+function effList(){ return session.ex.concat(addedFor(todayKey)); }
 function resolvedEx(i){
-  const e = session.ex[i]; const opts = optionsFor(e);
+  const base = session.ex;
+  if(i >= base.length){
+    const a = addedFor(todayKey)[i-base.length] || {name:'Exercise',sets:1,reps:'',load:'',rpe:'-'};
+    return Object.assign({}, a, { g:'', rpe:a.rpe||'-', _added:true, _swapped:false, _nopts:1 });
+  }
+  const e = base[i];
+  const cust = LOGS[todayKey].customEx && LOGS[todayKey].customEx[i];
+  if(cust){ return Object.assign({}, e, { name:cust.name, sets:cust.sets, reps:cust.reps, load:cust.load, rpe:cust.rpe||'-', g:'', _custom:true, _swapped:false, _nopts:1 }); }
+  const opts = optionsFor(e);
   const idx = (LOGS[todayKey].swaps && LOGS[todayKey].swaps[i]) || 0;
   const pick = opts[Math.min(idx, opts.length-1)] || {name:e.name, load:e.load};
   return Object.assign({}, e, { name:pick.name, load:pick.load, _swapped: idx>0, _nopts: opts.length });
@@ -74,6 +84,9 @@ function streak(){
 }
 function monthCount(){ const ym=todayKey.slice(0,7); return Object.keys(LOGS).filter(k=>k.startsWith(ym)&&LOGS[k].done).length; }
 function weekDone(){ let n=0; for(let i=0;i<7;i++){ const d=new Date(today); d.setDate(d.getDate()-i); const k=keyOf(d); if(LOGS[k]&&LOGS[k].done) n++; } return n; }
+function streakFromDates(dates){ const set=new Set(dates); let s=0;
+  for(let i=0;i<400;i++){ const d=new Date(today); d.setDate(d.getDate()-i); const k=keyOf(d);
+    if(i===0 && !set.has(k)) continue; if(set.has(k)) s++; else break; } return s; }
 function latestWeight(){ return WEIGHTS.length ? WEIGHTS[WEIGHTS.length-1].w : null; }
 function avg7(){
   const cut=new Date(today); cut.setDate(cut.getDate()-7);
@@ -111,7 +124,7 @@ function viewToday(){
   const log = ensureLog(todayKey);
   const o = openerFor(today);
   let totT=0, totD=0;
-  const rows = session.ex.map((_,i)=>{
+  const rows = effList().map((_,i)=>{
     const e = resolvedEx(i);
     const tg=target(e), done=Math.min(log.sets[i]||0,tg); totT+=tg; totD+=done;
     const dots = Array.from({length:tg},(_,j)=>`<span class="dot ${j<done?'on':''}" data-ex="${i}" data-dot="${j}"></span>`).join('');
@@ -119,7 +132,7 @@ function viewToday(){
     return `
     <div class="ex ${done>=tg?'ex-done':''}">
       <div class="ex-main">
-        <div class="ex-name">${e.name}${e._swapped?' <span class="swapped">swapped</span>':''}</div>
+        <div class="ex-name">${e.name}${e._added?' <span class="swapped">added</span>':(e._custom?' <span class="swapped">custom</span>':(e._swapped?' <span class="swapped">swapped</span>':''))}</div>
         <div class="ex-meta">${scheme}${e.rpe && e.rpe!=='-' ? ' · RPE '+e.rpe : ''} · <a class="demo" href="${demoURL(e.name)}" target="_blank" rel="noopener">▶ how-to</a></div>
         <div class="dots">${dots}</div>
       </div>
@@ -127,6 +140,7 @@ function viewToday(){
         <div class="ex-load-wrap"><span class="ex-load-cap">LOAD</span><span class="ex-load">${fmtLoad(e.load)}</span></div>
         <div class="ex-btns">
           ${e._nopts>1?`<button class="ex-swap" data-swap="${i}" title="Swap for a similar exercise">🔀</button>`:''}
+          <button class="ex-edit" data-edit="${i}" title="Customize this exercise">✏️</button>
           <button class="ex-timer" data-timer title="Rest timer">⏱️</button>
         </div>
       </div>
@@ -171,6 +185,7 @@ function viewToday(){
       <button class="wk-change" id="changeWk">🔄 Change today’s workout</button>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       ${rows}
+      <button class="wk-add" id="addEx">＋ Add an exercise</button>
     </div>
     <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?'✅ Completed — nice work':'Mark Workout Complete'}</button>
     ${log.done?debriefCardHTML(log):''}
@@ -190,7 +205,7 @@ function wireToday(){
   document.querySelectorAll('.dot').forEach(dot=>{
     dot.onclick = ()=>{ const i=+dot.dataset.ex, j=+dot.dataset.dot;
       log.sets[i] = (j+1===log.sets[i]) ? j : j+1;
-      log.done = session.ex.every((e,k)=> (log.sets[k]||0) >= target(e));
+      log.done = effList().every((e,k)=> (log.sets[k]||0) >= target(resolvedEx(k)));
       save(); render(); };
   });
   document.querySelectorAll('[data-swap]').forEach(b=> b.onclick=()=>{
@@ -201,8 +216,10 @@ function wireToday(){
     log.swaps[i]=next; save(); render(); toast('🔀 '+opts[next].name);
   });
   document.querySelectorAll('[data-timer]').forEach(b=> b.onclick=()=>startRest(90));
+  document.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>openExEdit(+b.dataset.edit));
+  { const ae=$('#addEx'); if(ae) ae.onclick=openExAdd; }
   $('#completeBtn').onclick = ()=>{
-    if(!log.done){ log.done=true; log.sets = session.ex.map((e)=>target(e)); save(); render(); openDebrief(); }
+    if(!log.done){ log.done=true; log.sets = effList().map((e,k)=>target(resolvedEx(k))); save(); render(); openDebrief(); }
     else { log.done=false; save(); render(); toast('Marked incomplete'); }
   };
   const de = $('#dbEdit') || $('#dbAdd'); if(de) de.onclick = openDebrief;
@@ -262,6 +279,72 @@ function openDebrief(k){
   wrap.querySelector('#dbSkip').onclick=close;
   wrap.onclick=(e)=>{ if(e.target===wrap) close(); };
   wrap.querySelector('#dbSave').onclick=()=>{ d.notes=wrap.querySelector('#dbNotes').value.trim(); d.at=k; log.debrief=d; save(); close(); render(); toast('Debrief saved 📝'); };
+}
+
+/* ---------- customize a single exercise ---------- */
+function openExEdit(i){
+  const e=resolvedEx(i);
+  const baseLen = session.ex.length, isAdded = i >= baseLen;
+  const showRemove = isAdded || e._custom || e._swapped;
+  const removeLabel = isAdded ? '🗑️ Remove exercise' : '↩︎ Reset to planned';
+  const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+  wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+    <div class="sheet-title">${isAdded?'Edit exercise':'Customize exercise'}</div>
+    <div class="hint" style="margin-bottom:4px">Put in any movement you want — your own sets, reps and load.</div>
+    <div class="sheet-label">Exercise</div><input id="exName" value="${esc(e.name)}" placeholder="e.g. Hammer Curl" />
+    <div class="ex-edit-grid">
+      <div><div class="sheet-label">Sets</div><input id="exSets" type="number" inputmode="numeric" min="1" value="${esc(String(e.sets))}" /></div>
+      <div><div class="sheet-label">Reps</div><input id="exReps" value="${esc(String(e.reps))}" placeholder="e.g. 12" /></div>
+    </div>
+    <div class="ex-edit-grid">
+      <div><div class="sheet-label">Load</div><input id="exLoad" value="${esc(String(e.load))}" placeholder="e.g. 35 or BW" /></div>
+      <div><div class="sheet-label">RPE</div><input id="exRpe" value="${esc(String(e.rpe||'-'))}" placeholder="9 or -" /></div>
+    </div>
+    <button class="btn btn-primary" id="exSave" style="margin-top:16px">Save exercise</button>
+    ${showRemove?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">${removeLabel}</button>`:''}
+    <button class="sheet-skip" id="exCancel">Cancel</button></div>`;
+  document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+  const q=s=>wrap.querySelector(s);
+  q('#exCancel').onclick=close; wrap.onclick=ev=>{ if(ev.target===wrap) close(); };
+  q('#exSave').onclick=()=>{
+    const name=q('#exName').value.trim(); if(!name){ q('#exName').focus(); return; }
+    const vals={ name, sets:Math.max(1,parseInt(q('#exSets').value,10)||1), reps:q('#exReps').value.trim()||String(e.reps), load:q('#exLoad').value.trim()||String(e.load), rpe:q('#exRpe').value.trim()||'-' };
+    const log=ensureLog(todayKey);
+    if(isAdded){ if(!log.addedEx) log.addedEx=[]; log.addedEx[i-baseLen]=vals; }
+    else { if(!log.customEx) log.customEx={}; log.customEx[i]=vals; if(log.swaps) delete log.swaps[i]; }
+    save(); render(); close(); toast('✏️ '+name); };
+  const rs=q('#exReset'); if(rs) rs.onclick=()=>{ const log=ensureLog(todayKey);
+    if(isAdded){ if(log.addedEx) log.addedEx.splice(i-baseLen,1); if(log.sets) log.sets.splice(i,1); }
+    else { if(log.customEx) delete log.customEx[i]; if(log.swaps) delete log.swaps[i]; }
+    save(); render(); close(); toast(isAdded?'🗑️ Removed':'↩︎ Reset to planned'); };
+}
+
+function openExAdd(){
+  const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+  wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+    <div class="sheet-title">Add an exercise</div>
+    <div class="hint" style="margin-bottom:4px">Tack on a finisher or anything extra — it goes at the end of today’s workout.</div>
+    <div class="sheet-label">Exercise</div><input id="axName" placeholder="e.g. Hammer Curl" />
+    <div class="ex-edit-grid">
+      <div><div class="sheet-label">Sets</div><input id="axSets" type="number" inputmode="numeric" min="1" value="3" /></div>
+      <div><div class="sheet-label">Reps</div><input id="axReps" value="12" placeholder="e.g. 12" /></div>
+    </div>
+    <div class="ex-edit-grid">
+      <div><div class="sheet-label">Load</div><input id="axLoad" placeholder="e.g. 35 or BW" /></div>
+      <div><div class="sheet-label">RPE</div><input id="axRpe" value="9" placeholder="9 or -" /></div>
+    </div>
+    <button class="btn btn-primary" id="axSave" style="margin-top:16px">Add exercise</button>
+    <button class="sheet-skip" id="axCancel">Cancel</button></div>`;
+  document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+  const q=s=>wrap.querySelector(s);
+  q('#axCancel').onclick=close; wrap.onclick=ev=>{ if(ev.target===wrap) close(); };
+  q('#axSave').onclick=()=>{
+    const name=q('#axName').value.trim(); if(!name){ q('#axName').focus(); return; }
+    const log=ensureLog(todayKey); if(!log.addedEx) log.addedEx=[];
+    log.addedEx.push({ name, sets:Math.max(1,parseInt(q('#axSets').value,10)||1), reps:q('#axReps').value.trim()||'12', load:q('#axLoad').value.trim()||'', rpe:q('#axRpe').value.trim()||'-' });
+    save(); render(); close(); toast('＋ '+name+' added'); };
 }
 
 /* ---------- change today's whole workout ---------- */
@@ -631,10 +714,11 @@ async function loadDiscover(){
   if(!people.length){ el.innerHTML=`<div class="hint">No one else has set a handle yet. As friends join and set theirs, they’ll appear here automatically.</div>`; return; }
   el.innerHTML=people.map(p=>{ const on=fset.has(p.id);
     return `<div class="disc-row">
-      ${avatarEl(p,'disc')}
-      <div class="disc-main"><div class="disc-name">${esc(p.display_name||('@'+p.handle))}</div><div class="disc-handle">@${esc(p.handle)}</div></div>
+      <div class="disc-tap" data-uid="${p.id}">${avatarEl(p,'disc')}
+        <div class="disc-main"><div class="disc-name">${esc(p.display_name||('@'+p.handle))}</div><div class="disc-handle">@${esc(p.handle)}</div></div></div>
       <button class="disc-follow${on?' following':''}" data-h="${p.handle}" ${on?'disabled':''}>${on?'Following ✓':'Follow'}</button>
     </div>`; }).join('');
+  el.querySelectorAll('.disc-tap[data-uid]').forEach(t=>{ t.onclick=()=>openProfile(t.dataset.uid); });
   el.querySelectorAll('.disc-follow:not(.following)').forEach(b=> b.onclick=async()=>{
     b.disabled=true; b.textContent='…';
     const err=await window.MGSync.follow(b.dataset.h);
@@ -703,12 +787,18 @@ async function openProfileEdit(){
     else { close(); loadProfileCard(); if(window.MGSync.reloadProfile) window.MGSync.reloadProfile(); toast('Profile saved ✅'); } };
 }
 function liftsSummary(it){
-  const tag=it.plan&&it.plan.tag;
-  const base=(tag && typeof SESSIONS!=='undefined' && SESSIONS[tag]) ? SESSIONS[tag] : SPLIT[new Date(it.d+'T12:00').getDay()];
-  const swaps=it.swaps||{}, sets=it.sets||[];
-  return base.ex.map((e,i)=>{ const opts=optionsFor(e); const idx=swaps[i]||0; const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
-    const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; const done=Math.min(sets[i]||0,tg);
-    return { name:pick.name, load:pick.load, done, tg }; });
+  const swaps=it.swaps||{}, sets=it.sets||[], cust=(it.plan&&it.plan.ex)||{}, added=(it.plan&&it.plan.added)||[];
+  let base;
+  if(it.plan && it.plan.custom && Array.isArray(it.plan.custom.ex)) base=it.plan.custom; // AI custom session
+  else { const tag=it.plan&&it.plan.tag; base=(tag && typeof SESSIONS!=='undefined' && SESSIONS[tag]) ? SESSIONS[tag] : SPLIT[new Date(it.d+'T12:00').getDay()]; }
+  const list = base.ex.concat(added);
+  return list.map((e,i)=>{
+    const isBase = i < base.ex.length;
+    if(isBase && cust[i]){ const c=cust[i]; const tg=(Number.isInteger(+c.sets)&&+c.sets>0)?+c.sets:1; return { name:c.name, load:c.load, done:Math.min(sets[i]||0,tg), tg }; }
+    if(isBase){ const opts=optionsFor(e); const idx=swaps[i]||0; const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
+      const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; return { name:pick.name, load:pick.load, done:Math.min(sets[i]||0,tg), tg }; }
+    const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; return { name:e.name, load:e.load, done:Math.min(sets[i]||0,tg), tg };
+  });
 }
 function feedCard(it, prof){
   const dObj=new Date(it.d+'T12:00');
@@ -725,7 +815,7 @@ function feedCard(it, prof){
   const statHTML=`<div class="fc-stats"><span>🏋️ ${exCount} exercises</span><span>✅ ${doneSets}/${totSets} sets</span><span>🔥 ${pct}% complete</span></div>`;
   const debHTML=d?`<div class="fc-deb">${d.rating?FEEL_MAP[d.rating]:''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${d.notes}”</div>`:''}</div>`:`<div class="fc-nodeb">No debrief logged</div>`;
   return `<div class="card fc">
-    <div class="fc-head">${avatarEl(prof,'fc')}
+    <div class="fc-head" data-uid="${it.user_id}">${avatarEl(prof,'fc')}
       <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}</div>
         <div class="fc-sub">${when} · ${title}</div></div>
       <span class="fc-pct">${pct}%</span></div>
@@ -736,6 +826,68 @@ async function loadFeed(){
   const { items, profiles }=await window.MGSync.feed();
   if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No workouts yet from people you follow. Head to the <b>👥 Friends</b> tab to find and follow people — their completed workouts will show up here.</div></div>`; return; }
   el.innerHTML=items.map(it=>feedCard(it, profiles[it.user_id]||{})).join('');
+  el.querySelectorAll('.fc-head[data-uid]').forEach(h=>{ h.onclick=()=>openProfile(h.dataset.uid); });
+}
+function profileWorkoutCard(it){
+  const when=new Date(it.d+'T12:00').toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const title=(it.plan&&it.plan.title)||'Workout';
+  const d=it.debrief;
+  const ls=liftsSummary(it);
+  const doneSets=ls.reduce((a,l)=>a+l.done,0), totSets=ls.reduce((a,l)=>a+l.tg,0);
+  const pct=totSets?Math.round(100*doneSets/totSets):0;
+  const lifts=ls.filter(l=>l.done>0), shown=lifts.slice(0,8);
+  const liftHTML=shown.length?`<div class="fc-lifts">${shown.map(l=>`<span>${esc(l.name)} <b>${fmtLoad(l.load)}</b></span>`).join('')}${lifts.length>8?`<span class="fc-more">+${lifts.length-8} more</span>`:''}</div>`:'';
+  const statHTML=`<div class="fc-stats"><span>🏋️ ${lifts.length||ls.length} exercises</span><span>✅ ${doneSets}/${totSets} sets</span><span>🔥 ${pct}%</span></div>`;
+  const debHTML=d?`<div class="fc-deb">${d.rating?FEEL_MAP[d.rating]:''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${esc(d.notes)}”</div>`:''}</div>`:'';
+  return `<div class="card pw">
+    <div class="pw-head"><span class="pw-title">${esc(title)}</span><span class="fc-pct">${pct}%</span></div>
+    <div class="pw-when">✅ ${when}</div>
+    ${statHTML}${liftHTML}${debHTML}</div>`;
+}
+async function openProfile(id){
+  if(!id || !(window.MGSync && window.MGSync.userProfile)) return;
+  const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+  wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div><div id="pvBody"><div class="hint">Loading profile…</div></div>
+    <button class="sheet-skip" id="pvClose">Close</button></div>`;
+  document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+  wrap.querySelector('#pvClose').onclick=close; wrap.onclick=e=>{ if(e.target===wrap) close(); };
+  const meId = window.MGSync.myId ? window.MGSync.myId() : null;
+  let p=null, days=[], following=[];
+  try{ [p, days, following]=await Promise.all([ window.MGSync.userProfile(id), window.MGSync.userDays(id), window.MGSync.following() ]); }catch{}
+  const body=wrap.querySelector('#pvBody'); if(!body) return;
+  if(!p){ body.innerHTML=`<div class="hint">Couldn’t load this profile.</div>`; return; }
+  const isMe = meId && id===meId;
+  const amFollowing = (following||[]).some(f=>f.id===id);
+  const dates=(days||[]).map(x=>x.d);
+  const st=streakFromDates(dates);
+  const cut=new Date(today); cut.setDate(cut.getDate()-6); cut.setHours(0,0,0,0);
+  const wk=(days||[]).filter(x=>new Date(x.d+'T12:00')>=cut).length;
+  const total=(days||[]).length;
+  const followBtn = isMe ? '' : (amFollowing
+    ? `<button class="btn btn-ghost" id="pvUnfollow" style="margin-bottom:14px">Following ✓ · tap to unfollow</button>`
+    : (p.handle?`<button class="btn btn-primary" id="pvFollow" data-h="${esc(p.handle)}" style="margin-bottom:14px">Follow</button>`:''));
+  body.innerHTML=`
+    <div class="prof-hero">${avatarEl(p,'hero')}
+      <div class="prof-hero-name">${esc(p.display_name||('@'+(p.handle||'friend')))}</div>
+      ${p.handle?`<div class="prof-handle">@${esc(p.handle)}</div>`:''}</div>
+    <div class="prof-stats">
+      <div><b>${st}</b><small>🔥 STREAK</small></div>
+      <div><b>${wk}</b><small>THIS WK</small></div>
+      <div><b>${total}</b><small>WORKOUTS</small></div>
+    </div>
+    ${followBtn}
+    ${p.goals?`<div class="pf-sec">🎯 <b>Goals</b> · ${esc(p.goals)}</div>`:''}
+    ${p.quote?`<div class="pf-sec">❝ <b>Quote</b> · ${esc(p.quote)}</div>`:''}
+    ${p.movie?`<div class="pf-sec">🎬 <b>Movie</b> · ${esc(p.movie)}</div>`:''}
+    <div class="sheet-label">Recent workouts</div>
+    ${ (days&&days.length) ? days.slice(0,20).map(profileWorkoutCard).join('') : `<div class="hint">${(isMe||amFollowing)?'No completed workouts yet.':'Follow to see their workouts.'}</div>` }`;
+  const fb=wrap.querySelector('#pvFollow'); if(fb) fb.onclick=async()=>{ fb.disabled=true; fb.textContent='…';
+    const err=await window.MGSync.follow(fb.dataset.h);
+    if(err){ fb.disabled=false; fb.textContent='Follow'; toast('⚠️ '+err); }
+    else { close(); toast('✅ Followed'); if(TAB==='feed') paintFeedPane(); } };
+  const ub=wrap.querySelector('#pvUnfollow'); if(ub) ub.onclick=async()=>{ ub.disabled=true;
+    await window.MGSync.unfollow(id); close(); toast('Unfollowed'); if(TAB==='feed') paintFeedPane(); };
 }
 
 /* ---------- rest timer ---------- */

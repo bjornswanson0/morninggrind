@@ -139,6 +139,11 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .ex-btns{display:flex; gap:6px; align-items:center}
 .ex-timer{background:none; border:none; font-size:18px; cursor:pointer; opacity:.5; padding:2px}
 .ex-timer:active{opacity:1}
+.ex-edit{background:none; border:none; font-size:16px; cursor:pointer; opacity:.5; padding:2px}
+.ex-edit:active{opacity:1}
+.ex-edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
+.wk-add{width:100%; margin-top:14px; background:var(--soft); color:var(--blue3); border:1px dashed var(--line); border-radius:12px; padding:13px; font-weight:900; font-size:14px; cursor:pointer; transition:transform .12s, background .15s}
+.wk-add:active{transform:scale(.98); background:var(--panel)}
 .ex-swap{background:var(--soft); border:1px solid var(--line); font-size:15px; cursor:pointer; padding:5px 8px; border-radius:9px; transition:transform .12s, background .15s}
 .ex-swap:active{transform:scale(.9); background:var(--panel)}
 .swapped{font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--blue3); background:var(--soft); padding:2px 7px; border-radius:999px; vertical-align:middle; margin-left:6px}
@@ -236,6 +241,18 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .disc-follow{flex:none; border:none; background:var(--blue); color:#fff; font-weight:900; font-size:13px; padding:9px 15px; border-radius:10px; cursor:pointer; transition:transform .12s}
 .disc-follow:active{transform:scale(.95)}
 .disc-follow.following{background:var(--soft); color:var(--muted)}
+.disc-tap{display:flex; align-items:center; gap:11px; flex:1; min-width:0; cursor:pointer}
+.fc-head[data-uid]{cursor:pointer}
+/* Friend profile page (sheet) */
+.prof-hero{display:flex; flex-direction:column; align-items:center; text-align:center; gap:5px; padding:6px 0 2px}
+.hero-emoji{font-size:54px; line-height:1}
+.prof-hero-name{font-size:21px; font-weight:900; letter-spacing:-.03em; margin-top:5px}
+.prof-stats{display:flex; justify-content:space-around; text-align:center; margin:16px 0; padding:15px 0; border-top:1px solid var(--line); border-bottom:1px solid var(--line)}
+.prof-stats b{display:block; font-size:25px; font-weight:900; color:var(--blue3); font-variant-numeric:tabular-nums; letter-spacing:-.03em}
+.prof-stats small{display:block; font-size:9px; font-weight:900; letter-spacing:.6px; color:var(--muted); margin-top:5px}
+.pw-head{display:flex; align-items:center; justify-content:space-between; gap:10px}
+.pw-title{font-size:16px; font-weight:900; letter-spacing:-.02em}
+.pw-when{font-size:12px; color:var(--muted); font-weight:800; margin-top:3px}
 
 /* Markets */
 .mk-title{display:flex; justify-content:space-between; align-items:center}
