@@ -111,6 +111,7 @@
     }catch(e){ console.warn('push failed', e); }
   }
   function queuePush(){ if(!USER) return; clearTimeout(pushT); pushT=setTimeout(pushAll,1200); }
+  async function flush(){ if(!USER) return; clearTimeout(pushT); try{ await pushAll(); }catch(e){ console.warn('flush', e); } }
 
   /* ---- social ---- */
   async function ensureProfile(){
@@ -162,7 +163,7 @@
       const profiles={}; (pf||[]).forEach(p=>profiles[p.id]=p); return { items:days||[], profiles }; }
   };
 
-  window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER, myId:()=>uid(),
+  window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER, myId:()=>uid(), flush,
     displayName:()=> (PROFILE&&PROFILE.display_name) || (USER&&USER.email ? USER.email.split('@')[0] : ''),
     reloadProfile:async()=>{ await loadProfile(); if(typeof render==='function') render(); } }, social);
 
