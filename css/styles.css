@@ -106,7 +106,7 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 
 /* Workout card */
 .wk-head{display:flex; align-items:center; justify-content:space-between; gap:14px}
-.wk-title{font-size:22px; font-weight:900; letter-spacing:-.03em; color:var(--ink)}
+.wk-title{font-size:19px; font-weight:900; letter-spacing:-.03em; color:var(--ink); line-height:1.2}
 .wk-count{font-size:12px; font-weight:900; color:var(--blue3); background:var(--soft); padding:6px 12px; border-radius:999px; white-space:nowrap; font-variant-numeric:tabular-nums}
 .wk-sub{font-size:13px; color:var(--muted); font-weight:800; margin:14px 0 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .wk-swapped{font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--blue3); background:var(--soft); padding:3px 9px; border-radius:999px}
@@ -141,6 +141,10 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .ex-timer:active{opacity:1}
 .ex-edit{background:none; border:none; font-size:16px; cursor:pointer; opacity:.5; padding:2px}
 .ex-edit:active{opacity:1}
+.ex-del{background:none; border:none; font-size:15px; cursor:pointer; opacity:.5; padding:2px}
+.ex-del:active{opacity:1}
+.wk-rename{background:none; border:none; font-size:13px; cursor:pointer; opacity:.55; padding:0 2px; vertical-align:middle}
+.wk-rename:active{opacity:1}
 .ex-edit-grid{display:grid; grid-template-columns:1fr 1fr; gap:10px}
 .wk-add{width:100%; margin-top:14px; background:var(--soft); color:var(--blue3); border:1px dashed var(--line); border-radius:12px; padding:13px; font-weight:900; font-size:14px; cursor:pointer; transition:transform .12s, background .15s}
 .wk-add:active{transform:scale(.98); background:var(--panel)}
