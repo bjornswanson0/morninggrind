@@ -182,7 +182,7 @@ function viewToday(){
     <div class="card">
       <div class="wk-head">
         <div style="flex:1; min-width:0">
-          <div class="wk-title">${esc(workoutName())} <button class="wk-rename" id="renameWk" title="Rename this workout">✏️</button></div>
+          <div class="wk-title" id="wkTitle" title="Tap to rename">${esc(workoutName())} <span class="wk-rename">✏️</span></div>
           ${(LOGS[todayKey]&&(LOGS[todayKey].sessionOverride||LOGS[todayKey].customName))?`<div class="wk-sub">${LOGS[todayKey].sessionOverride?'<span class="wk-swapped">'+(LOGS[todayKey].sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>':''}${LOGS[todayKey].customName?'<span class="wk-swapped">renamed</span>':''}</div>`:''}
         </div>
         <span class="wk-count">${totD}/${totT} sets</span>
@@ -231,7 +231,7 @@ function wireToday(){
     else { if(!log.removedEx) log.removedEx={}; log.removedEx[i]=1; }
     save(); render(); toast('🗑️ Removed'); });
   { const ae=$('#addEx'); if(ae) ae.onclick=openExAdd; }
-  { const rw=$('#renameWk'); if(rw) rw.onclick=openRename; }
+  { const wt=$('#wkTitle'); if(wt) wt.onclick=openRename; }
   document.querySelectorAll('[data-restore]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.restore;
     if(log.removedEx) delete log.removedEx[i]; save(); render(); toast('↩︎ Restored'); });
   $('#completeBtn').onclick = ()=>{
