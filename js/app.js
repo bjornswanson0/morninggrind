@@ -56,6 +56,7 @@ function ensureLog(k){
 function addedFor(k){ return (LOGS[k] && LOGS[k].addedEx) || []; }
 function effList(){ return session.ex.concat(addedFor(todayKey)); }
 function isRemoved(i){ return !!(LOGS[todayKey] && LOGS[todayKey].removedEx && LOGS[todayKey].removedEx[i]); }
+function workoutName(){ return (LOGS[todayKey] && LOGS[todayKey].customName) || session.title; }
 function resolvedEx(i){
   const base = session.ex;
   if(i >= base.length){
@@ -144,6 +145,7 @@ function viewToday(){
         <div class="ex-btns">
           ${e._nopts>1?`<button class="ex-swap" data-swap="${i}" title="Swap for a similar exercise">🔀</button>`:''}
           <button class="ex-edit" data-edit="${i}" title="Customize this exercise">✏️</button>
+          <button class="ex-del" data-remove="${i}" title="Remove this exercise">🗑️</button>
           <button class="ex-timer" data-timer title="Rest timer">⏱️</button>
         </div>
       </div>
@@ -179,10 +181,12 @@ function viewToday(){
     <div class="card weather-card" id="weatherCard"><span class="hint">Loading weather…</span></div>
     <div class="card">
       <div class="wk-head">
-        <span class="wk-title">Today’s Workout</span>
+        <div style="flex:1; min-width:0">
+          <div class="wk-title">${esc(workoutName())} <button class="wk-rename" id="renameWk" title="Rename this workout">✏️</button></div>
+          ${(LOGS[todayKey]&&(LOGS[todayKey].sessionOverride||LOGS[todayKey].customName))?`<div class="wk-sub">${LOGS[todayKey].sessionOverride?'<span class="wk-swapped">'+(LOGS[todayKey].sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>':''}${LOGS[todayKey].customName?'<span class="wk-swapped">renamed</span>':''}</div>`:''}
+        </div>
         <span class="wk-count">${totD}/${totT} sets</span>
       </div>
-      <div class="wk-sub">${session.title}${LOGS[todayKey]&&LOGS[todayKey].sessionOverride?' · <span class="wk-swapped">'+(LOGS[todayKey].sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>':''}</div>
       ${session.aiNote?`<div class="ai-note">🤖 <b>Coach:</b> ${session.aiNote}</div>`:''}
       <div class="cbum">🏆 <b>Inspired by Chris Bumstead</b> — “CBum,” the 6× Classic Physique Mr. Olympia (2019–2024) and the most decorated champion the division has ever had. Every session borrows his golden-era approach: controlled tempo, full-range reps, and balanced, aesthetic development over ego lifting.</div>
       <button class="wk-change" id="changeWk">🔄 Change today’s workout</button>
@@ -221,7 +225,13 @@ function wireToday(){
   });
   document.querySelectorAll('[data-timer]').forEach(b=> b.onclick=()=>startRest(90));
   document.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>openExEdit(+b.dataset.edit));
+  document.querySelectorAll('[data-remove]').forEach(b=> b.onclick=()=>{
+    const i=+b.dataset.remove, baseLen=session.ex.length;
+    if(i>=baseLen){ if(log.addedEx) log.addedEx.splice(i-baseLen,1); if(log.sets) log.sets.splice(i,1); }
+    else { if(!log.removedEx) log.removedEx={}; log.removedEx[i]=1; }
+    save(); render(); toast('🗑️ Removed'); });
   { const ae=$('#addEx'); if(ae) ae.onclick=openExAdd; }
+  { const rw=$('#renameWk'); if(rw) rw.onclick=openRename; }
   document.querySelectorAll('[data-restore]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.restore;
     if(log.removedEx) delete log.removedEx[i]; save(); render(); toast('↩︎ Restored'); });
   $('#completeBtn').onclick = ()=>{
@@ -307,9 +317,7 @@ function openExEdit(i){
       <div><div class="sheet-label">RPE</div><input id="exRpe" value="${esc(String(e.rpe||'-'))}" placeholder="9 or -" /></div>
     </div>
     <button class="btn btn-primary" id="exSave" style="margin-top:16px">Save exercise</button>
-    ${isAdded
-      ? `<button class="btn btn-ghost" id="exReset" style="margin-top:8px">🗑️ Remove exercise</button>`
-      : `${(e._custom||e._swapped)?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">↩︎ Reset to planned</button>`:''}<button class="btn btn-ghost" id="exRemove" style="margin-top:8px">🗑️ Remove from today</button>`}
+    ${(!isAdded && (e._custom||e._swapped))?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">↩︎ Reset to planned</button>`:''}
     <button class="sheet-skip" id="exCancel">Cancel</button></div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
@@ -323,12 +331,8 @@ function openExEdit(i){
     else { if(!log.customEx) log.customEx={}; log.customEx[i]=vals; if(log.swaps) delete log.swaps[i]; }
     save(); render(); close(); toast('✏️ '+name); };
   const rs=q('#exReset'); if(rs) rs.onclick=()=>{ const log=ensureLog(todayKey);
-    if(isAdded){ if(log.addedEx) log.addedEx.splice(i-baseLen,1); if(log.sets) log.sets.splice(i,1); }
-    else { if(log.customEx) delete log.customEx[i]; if(log.swaps) delete log.swaps[i]; }
-    save(); render(); close(); toast(isAdded?'🗑️ Removed':'↩︎ Reset to planned'); };
-  const rm=q('#exRemove'); if(rm) rm.onclick=()=>{ const log=ensureLog(todayKey);
-    if(!log.removedEx) log.removedEx={}; log.removedEx[i]=1;
-    save(); render(); close(); toast('🗑️ Removed from today'); };
+    if(log.customEx) delete log.customEx[i]; if(log.swaps) delete log.swaps[i];
+    save(); render(); close(); toast('↩︎ Reset to planned'); };
 }
 
 function openExAdd(){
@@ -356,6 +360,28 @@ function openExAdd(){
     const log=ensureLog(todayKey); if(!log.addedEx) log.addedEx=[];
     log.addedEx.push({ name, sets:Math.max(1,parseInt(q('#axSets').value,10)||1), reps:q('#axReps').value.trim()||'12', load:q('#axLoad').value.trim()||'', rpe:q('#axRpe').value.trim()||'-' });
     save(); render(); close(); toast('＋ '+name+' added'); };
+}
+
+/* ---------- rename today's workout ---------- */
+function openRename(){
+  const cur=(LOGS[todayKey] && LOGS[todayKey].customName) || '';
+  const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+  wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+    <div class="sheet-title">Name today’s workout</div>
+    <div class="hint" style="margin-bottom:2px">Give today a name — e.g. “Arm Day Pump” or “Leg Destroyer.” Leave blank to use the default.</div>
+    <input id="rnName" value="${esc(cur)}" placeholder="${esc(session.title)}" />
+    <button class="btn btn-primary" id="rnSave" style="margin-top:16px">Save name</button>
+    ${cur?`<button class="btn btn-ghost" id="rnReset" style="margin-top:8px">↩︎ Use default name</button>`:''}
+    <button class="sheet-skip" id="rnCancel">Cancel</button></div>`;
+  document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+  const q=s=>wrap.querySelector(s);
+  q('#rnCancel').onclick=close; wrap.onclick=ev=>{ if(ev.target===wrap) close(); };
+  q('#rnSave').onclick=()=>{ const v=q('#rnName').value.trim(); const log=ensureLog(todayKey);
+    if(v && v!==session.title) log.customName=v.slice(0,60); else delete log.customName;
+    save(); render(); close(); toast(log.customName?('✏️ '+log.customName):'↩︎ Default name'); };
+  const rr=q('#rnReset'); if(rr) rr.onclick=()=>{ const log=ensureLog(todayKey); delete log.customName;
+    save(); render(); close(); toast('↩︎ Default name'); };
 }
 
 /* ---------- change today's whole workout ---------- */

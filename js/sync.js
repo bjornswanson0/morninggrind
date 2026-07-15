@@ -8,7 +8,7 @@
   const uid = ()=> USER && USER.id;
   async function loadProfile(){ if(!USER){ PROFILE=null; return; } try{ const { data }=await SB.from('profiles').select('*').eq('id',uid()).maybeSingle(); PROFILE=data||null; }catch{} }
   const mergeSets = (a,b)=>{ a=a||[]; b=b||[]; const n=Math.max(a.length,b.length), o=[]; for(let i=0;i<n;i++) o.push(Math.max(a[i]||0,b[i]||0)); return o; };
-  const titleFor = k => (typeof sessionFor==='function' ? sessionFor(k).title : '');
+  const titleFor = k => { const cn=LOGS[k]&&LOGS[k].customName; return cn || (typeof sessionFor==='function' ? sessionFor(k).title : ''); };
   const tagFor   = k => (typeof sessionFor==='function' ? sessionFor(k).tag   : '');
 
   /* ---- status bar under the header ---- */
@@ -69,7 +69,8 @@
           customSession: cur.customSession || (r.plan&&r.plan.custom) || undefined,
           customEx: cur.customEx || (r.plan&&r.plan.ex) || undefined,
           addedEx: cur.addedEx || (r.plan&&r.plan.added) || undefined,
-          removedEx: cur.removedEx || (r.plan&&r.plan.removed) || undefined }; });
+          removedEx: cur.removedEx || (r.plan&&r.plan.removed) || undefined,
+          customName: cur.customName || (r.plan&&r.plan.name) || undefined }; });
       const wmap={}; (wts.data||[]).forEach(r=>wmap[r.d]=Number(r.lb)); WEIGHTS.forEach(w=>wmap[w.date]=w.w);
       WEIGHTS=Object.entries(wmap).map(([date,w])=>({date,w})).sort((a,b)=>a.date.localeCompare(b.date));
       const seen=new Set(PRS.map(p=>p.date+'|'+p.lift+'|'+p.w));
@@ -85,7 +86,7 @@
     if(!USER) return; const u=uid();
     try{
       const dayRows=Object.entries(LOGS).map(([d,v])=>({ user_id:u, d, completed:!!v.done, sets:v.sets||[], swaps:v.swaps||{}, debrief:v.debrief||null,
-        plan:{ title:titleFor(d), tag:tagFor(d), override:v.sessionOverride||null, custom:v.customSession||null, ex:v.customEx||null, added:v.addedEx||null, removed:v.removedEx||null }, updated_at:new Date().toISOString() }));
+        plan:{ title:titleFor(d), tag:tagFor(d), override:v.sessionOverride||null, custom:v.customSession||null, ex:v.customEx||null, added:v.addedEx||null, removed:v.removedEx||null, name:v.customName||null }, updated_at:new Date().toISOString() }));
       if(dayRows.length) await SB.from('days').upsert(dayRows,{ onConflict:'user_id,d' });
       const wRows=WEIGHTS.map(w=>({ user_id:u, d:w.date, lb:w.w }));
       if(wRows.length) await SB.from('weights').upsert(wRows,{ onConflict:'user_id,d' });
