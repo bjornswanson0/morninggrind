@@ -155,9 +155,9 @@
     // everyone on the app who has set a handle (so you can follow without knowing it)
     async discover(){ const { data }=await SB.from('profiles').select('*').not('handle','is',null).neq('id',uid()).order('display_name').limit(60); return data||[]; },
     async feed(){ const { data:fl }=await SB.from('follows').select('followee').eq('follower',uid());
-      const ids=(fl||[]).map(x=>x.followee); if(!ids.length) return { items:[], profiles:{} };
+      const ids=[...new Set([uid(), ...((fl||[]).map(x=>x.followee))])]; // you + everyone you follow
       const [{ data:days }, { data:pf }]=await Promise.all([
-        SB.from('days').select('*').in('user_id',ids).eq('completed',true).order('d',{ascending:false}).limit(40),
+        SB.from('days').select('*').in('user_id',ids).eq('completed',true).order('d',{ascending:false}).limit(80),
         SB.from('profiles').select('*').in('id',ids) ]);
       const profiles={}; (pf||[]).forEach(p=>profiles[p.id]=p); return { items:days||[], profiles }; }
   };

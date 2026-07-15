@@ -231,6 +231,7 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .fc-lifts{display:flex; flex-wrap:wrap; gap:6px; margin-top:12px}
 .fc-lifts span{font-size:12.5px; font-weight:800; color:var(--sub); background:var(--soft); padding:6px 11px; border-radius:999px}
 .fc-lifts b{color:var(--blue3)}
+.fc-you{font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--blue3); background:var(--soft); padding:2px 8px; border-radius:999px; vertical-align:middle; margin-left:6px}
 .fc-more{color:var(--muted) !important; background:transparent !important}
 .feed-seg{margin-bottom:14px}
 .feed-seg button{flex:1; font-size:14px; padding:11px}
