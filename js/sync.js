@@ -102,7 +102,8 @@
     try{
       const dayRows=Object.entries(LOGS).map(([d,v])=>({ user_id:u, d, completed:!!v.done, sets:v.sets||[], swaps:v.swaps||{}, debrief:v.debrief||null,
         plan:{ title:titleFor(d), tag:tagFor(d), override:v.sessionOverride||null, custom:v.customSession||null, ex:v.customEx||null, added:v.addedEx||null, removed:v.removedEx||null, name:v.customName||null }, updated_at:new Date().toISOString() }));
-      if(dayRows.length) await SB.from('days').upsert(dayRows,{ onConflict:'user_id,d' });
+      if(dayRows.length){ const { error }=await SB.from('days').upsert(dayRows,{ onConflict:'user_id,d' });
+        if(error){ console.warn('days push failed', error); if(typeof toast==='function') toast('⚠️ Save failed: '+(error.message||error.code||'unknown — check column names')); } }
       const wRows=WEIGHTS.map(w=>({ user_id:u, d:w.date, lb:w.w }));
       if(wRows.length) await SB.from('weights').upsert(wRows,{ onConflict:'user_id,d' });
       const newPRs=PRS.filter(p=>!p._s);
