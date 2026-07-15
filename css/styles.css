@@ -208,6 +208,8 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .authbar.out{color:#f0a020}
 .authbar button{border:none; background:var(--blue); color:#fff; padding:8px 14px; border-radius:999px; font-weight:900; font-size:12px; cursor:pointer}
 .authbar button:active{transform:scale(.96)}
+.au-forgot{display:block; width:100%; background:none; border:none; color:var(--muted); font-weight:800; font-size:13px; padding:10px 0 2px; cursor:pointer; text-decoration:underline}
+.au-forgot:active{color:var(--blue3)}
 
 /* Feed / Friends */
 .av{border-radius:50%; object-fit:cover; flex:none; display:block; background:var(--soft)}
