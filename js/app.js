@@ -855,7 +855,7 @@ function feedCard(it, prof){
   const debHTML=d?`<div class="fc-deb">${d.rating?FEEL_MAP[d.rating]:''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${d.notes}”</div>`:''}</div>`:`<div class="fc-nodeb">No debrief logged</div>`;
   return `<div class="card fc">
     <div class="fc-head" data-uid="${it.user_id}">${avatarEl(prof,'fc')}
-      <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}</div>
+      <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}${(window.MGSync&&window.MGSync.myId&&window.MGSync.myId()===it.user_id)?' <span class="fc-you">You</span>':''}</div>
         <div class="fc-sub">${when} · ${title}</div></div>
       <span class="fc-pct">${pct}%</span></div>
     ${statHTML}${liftHTML}${debHTML}</div>`;
@@ -863,7 +863,7 @@ function feedCard(it, prof){
 async function loadFeed(){
   const el=$('#feedList'); if(!el) return;
   const { items, profiles }=await window.MGSync.feed();
-  if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No workouts yet from people you follow. Head to the <b>👥 Friends</b> tab to find and follow people — their completed workouts will show up here.</div></div>`; return; }
+  if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No completed workouts yet. Finish today’s session and it’ll show up here — and head to the <b>👥 Friends</b> tab to follow people and see theirs too.</div></div>`; return; }
   el.innerHTML=items.map(it=>feedCard(it, profiles[it.user_id]||{})).join('');
   el.querySelectorAll('.fc-head[data-uid]').forEach(h=>{ h.onclick=()=>openProfile(h.dataset.uid); });
 }
