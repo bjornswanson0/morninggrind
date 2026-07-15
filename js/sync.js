@@ -46,6 +46,15 @@
         else msg('✅ Account created — check your email to confirm, then sign in.');
       }
     }
+    async function resetPw(){
+      const email=wrap.querySelector('#auEmail').value.trim();
+      const msg=t=>{ const m=wrap.querySelector('#auMsg'); if(m) m.textContent=t; };
+      if(!email) return msg('Type your email above first, then tap “Forgot password.”');
+      msg('Sending reset link…');
+      const { error }=await SB.auth.resetPasswordForEmail(email, { redirectTo: location.origin + location.pathname });
+      if(error) msg('⚠️ '+error.message);
+      else msg('✅ Check your email for a password-reset link (check spam too).');
+    }
     function paint(){
       const signin = mode==='signin';
       wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
@@ -58,14 +67,39 @@
           <button type="submit" class="btn btn-primary" id="auGo">${signin?'Sign in':'Create account'}</button>
         </form>
         <button class="btn btn-ghost" id="auToggle" style="margin-top:8px">${signin?'New here? Create an account':'Already have an account? Sign in'}</button>
+        ${signin?`<button class="au-forgot" id="auForgot" type="button">Forgot password?</button>`:''}
         <button class="sheet-skip" id="auCancel">Cancel</button></div>`;
       const f=wrap.querySelector('#auForm'); if(f) f.onsubmit=(e)=>{ e.preventDefault(); go(); };
       wrap.querySelector('#auToggle').onclick=()=>{ mode = signin?'signup':'signin'; paint(); };
+      { const fp=wrap.querySelector('#auForgot'); if(fp) fp.onclick=resetPw; }
       wrap.querySelector('#auCancel').onclick=close;
       const focusEl = savedEmail ? wrap.querySelector('#auPw') : wrap.querySelector('#auEmail');
       if(focusEl) setTimeout(()=>{ try{ focusEl.focus(); }catch{} },260);
     }
     paint();
+  }
+
+  function openNewPassword(){
+    const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+    wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+      <div class="sheet-title">Set a new password 🔑</div>
+      <div class="hint" style="margin-bottom:6px">Enter a new password for your account.</div>
+      <form id="npForm">
+        <input id="npPw" type="password" placeholder="New password (8+ characters)" autocomplete="new-password" />
+        <div id="npMsg" class="hint"></div>
+        <button type="submit" class="btn btn-primary" id="npSave">Update password</button>
+      </form></div>`;
+    document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+    const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+    const q=s=>wrap.querySelector(s);
+    const go=async()=>{ const pw=q('#npPw').value; const msg=t=>{ const m=q('#npMsg'); if(m) m.textContent=t; };
+      if(pw.length<8) return msg('Password must be 8+ characters.');
+      msg('Updating…');
+      const { error }=await SB.auth.updateUser({ password:pw });
+      if(error) msg('⚠️ '+error.message);
+      else { if(typeof toast==='function') toast('✅ Password updated'); close(); } };
+    q('#npForm').onsubmit=(e)=>{ e.preventDefault(); go(); };
+    setTimeout(()=>{ const p=q('#npPw'); if(p) p.focus(); },260);
   }
 
   /* ---- personal data sync ---- */
@@ -171,7 +205,9 @@
   async function init(){
     try{ const { data }=await SB.auth.getSession(); USER=data.session?.user||null; }catch{}
     bar();
-    SB.auth.onAuthStateChange(async (_e,s)=>{ USER=s?.user||null; bar(); if(USER){ toast&&toast('Syncing ☁️'); await loadProfile(); await pull(true); } else { PROFILE=null; if(typeof render==='function') render(); } });
+    SB.auth.onAuthStateChange(async (ev,s)=>{ USER=s?.user||null; bar();
+      if(ev==='PASSWORD_RECOVERY'){ openNewPassword(); }
+      if(USER){ toast&&toast('Syncing ☁️'); await loadProfile(); await pull(true); } else { PROFILE=null; if(typeof render==='function') render(); } });
     if(USER){ await loadProfile(); await pull(true); }
   }
   // Re-sync from the cloud whenever the app comes back into view (catches edits made on another device)
