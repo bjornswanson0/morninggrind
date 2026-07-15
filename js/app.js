@@ -195,7 +195,7 @@ function viewToday(){
       <button class="wk-add" id="addEx">＋ Add an exercise</button>
       ${removedList.length?`<div class="removed-note">🗑️ Removed: ${removedList.map(r=>`<button data-restore="${r.i}">${esc(r.name)} ↩︎</button>`).join('')}</div>`:''}
     </div>
-    <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?'✅ Completed — nice work':'Mark Workout Complete'}</button>
+    <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?'✅ Completed · shared to your feed':'Finish & post to feed'}</button>
     ${log.done?debriefCardHTML(log):''}
     <div class="card" style="margin-top:14px">
       <div class="section-title">⚖️ Tonight’s Weight</div>
@@ -862,6 +862,7 @@ function feedCard(it, prof){
 }
 async function loadFeed(){
   const el=$('#feedList'); if(!el) return;
+  if(window.MGSync && window.MGSync.flush){ try{ await window.MGSync.flush(); }catch{} }
   const { items, profiles }=await window.MGSync.feed();
   if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No completed workouts yet. Finish today’s session and it’ll show up here — and head to the <b>👥 Friends</b> tab to follow people and see theirs too.</div></div>`; return; }
   el.innerHTML=items.map(it=>feedCard(it, profiles[it.user_id]||{})).join('');
