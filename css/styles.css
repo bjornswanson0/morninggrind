@@ -106,7 +106,7 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 
 /* Workout card */
 .wk-head{display:flex; align-items:center; justify-content:space-between; gap:14px}
-.wk-title{font-size:19px; font-weight:900; letter-spacing:-.03em; color:var(--ink); line-height:1.2}
+.wk-title{font-size:19px; font-weight:900; letter-spacing:-.03em; color:var(--ink); line-height:1.2; cursor:pointer}
 .wk-count{font-size:12px; font-weight:900; color:var(--blue3); background:var(--soft); padding:6px 12px; border-radius:999px; white-space:nowrap; font-variant-numeric:tabular-nums}
 .wk-sub{font-size:13px; color:var(--muted); font-weight:800; margin:14px 0 14px; display:flex; align-items:center; gap:8px; flex-wrap:wrap}
 .wk-swapped{font-size:10px; font-weight:900; text-transform:uppercase; letter-spacing:.5px; color:var(--blue3); background:var(--soft); padding:3px 9px; border-radius:999px}

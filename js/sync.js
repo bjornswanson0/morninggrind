@@ -23,34 +23,49 @@
       el.querySelector('#signInBtn').onclick=openAuth; }
   }
   function openAuth(){
+    let savedEmail=''; try{ savedEmail = localStorage.getItem('mg_email')||''; }catch{}
+    let mode = savedEmail ? 'signin' : 'signup';
     const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
-    wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
-      <div class="sheet-title">Sync your account ☁️</div>
-      <div class="hint" style="margin-bottom:4px">Use the same email + password on every device to keep them in sync.</div>
-      <input id="auEmail" type="email" placeholder="email" autocomplete="username" />
-      <input id="auPw" type="password" placeholder="password (8+ characters)" autocomplete="current-password" />
-      <div id="auMsg" class="hint"></div>
-      <button class="btn btn-primary" id="auSignIn">Sign in</button>
-      <button class="btn btn-ghost" id="auSignUp" style="margin-top:8px">Create account</button>
-      <button class="sheet-skip" id="auCancel">Cancel</button></div>`;
     document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
     const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
-    const msg=t=>wrap.querySelector('#auMsg').textContent=t;
-    const creds=()=>({ email:wrap.querySelector('#auEmail').value.trim(), password:wrap.querySelector('#auPw').value });
-    wrap.querySelector('#auCancel').onclick=close; wrap.onclick=e=>{ if(e.target===wrap) close(); };
-    wrap.querySelector('#auSignIn').onclick=async()=>{ const c=creds();
-      if(!c.email || !c.password) return msg('Enter your email and password.');
-      msg('Signing in…');
-      const { error }=await SB.auth.signInWithPassword(c);
-      if(error) msg(/invalid/i.test(error.message) ? '⚠️ Wrong email/password — new here? Tap “Create account”.' : '⚠️ '+error.message);
-      else close(); };
-    wrap.querySelector('#auSignUp').onclick=async()=>{ const c=creds();
-      if(!c.email) return msg('Enter an email first.');
-      if(c.password.length<8) return msg('Password must be 8+ characters.');
-      msg('Creating account…'); const { data, error }=await SB.auth.signUp(c);
-      if(error) msg('⚠️ '+error.message);
-      else if(data.session) { toast&&toast('Welcome! ☁️'); close(); }
-      else msg('✅ Account created — check your email to confirm, then tap “Sign in”.'); };
+    wrap.onclick=e=>{ if(e.target===wrap) close(); };
+    async function go(){
+      const email=wrap.querySelector('#auEmail').value.trim(), password=wrap.querySelector('#auPw').value;
+      const msg=t=>{ const m=wrap.querySelector('#auMsg'); if(m) m.textContent=t; };
+      if(!email || !password) return msg('Enter your email and password.');
+      if(mode==='signup' && password.length<8) return msg('Password must be 8+ characters.');
+      msg(mode==='signin'?'Signing in…':'Creating account…');
+      if(mode==='signin'){
+        const { error }=await SB.auth.signInWithPassword({email,password});
+        if(error){ msg(/invalid/i.test(error.message)?'⚠️ Wrong email or password. New here? Tap “Create an account”.':'⚠️ '+error.message); }
+        else { try{ localStorage.setItem('mg_email', email); }catch{} close(); }
+      } else {
+        const { data, error }=await SB.auth.signUp({email,password});
+        if(error) msg('⚠️ '+error.message);
+        else if(data.session){ try{ localStorage.setItem('mg_email', email); }catch{} toast&&toast('Welcome! ☁️'); close(); }
+        else msg('✅ Account created — check your email to confirm, then sign in.');
+      }
+    }
+    function paint(){
+      const signin = mode==='signin';
+      wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+        <div class="sheet-title">${signin?'Welcome back 👋':'Create your account ☁️'}</div>
+        <div class="hint" style="margin-bottom:8px">${signin?'Sign in to sync your training across all your devices.':'One free account keeps your workouts synced on every device.'}</div>
+        <form id="auForm">
+          <input id="auEmail" type="email" inputmode="email" autocapitalize="off" autocorrect="off" placeholder="Email" autocomplete="username" value="${savedEmail.replace(/"/g,'&quot;')}" />
+          <input id="auPw" type="password" placeholder="${signin?'Password':'Password (8+ characters)'}" autocomplete="${signin?'current-password':'new-password'}" />
+          <div id="auMsg" class="hint"></div>
+          <button type="submit" class="btn btn-primary" id="auGo">${signin?'Sign in':'Create account'}</button>
+        </form>
+        <button class="btn btn-ghost" id="auToggle" style="margin-top:8px">${signin?'New here? Create an account':'Already have an account? Sign in'}</button>
+        <button class="sheet-skip" id="auCancel">Cancel</button></div>`;
+      const f=wrap.querySelector('#auForm'); if(f) f.onsubmit=(e)=>{ e.preventDefault(); go(); };
+      wrap.querySelector('#auToggle').onclick=()=>{ mode = signin?'signup':'signin'; paint(); };
+      wrap.querySelector('#auCancel').onclick=close;
+      const focusEl = savedEmail ? wrap.querySelector('#auPw') : wrap.querySelector('#auEmail');
+      if(focusEl) setTimeout(()=>{ try{ focusEl.focus(); }catch{} },260);
+    }
+    paint();
   }
 
   /* ---- personal data sync ---- */
