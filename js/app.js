@@ -748,17 +748,17 @@ async function loadDiscover(){
   try{ [people, following]=await Promise.all([window.MGSync.discover(), window.MGSync.following()]); }
   catch{ el.innerHTML=`<div class="hint">Couldn’t load people right now — pull to refresh.</div>`; return; }
   const fset=new Set((following||[]).map(f=>f.id));
-  if(!people.length){ el.innerHTML=`<div class="hint">No one else has set a handle yet. As friends join and set theirs, they’ll appear here automatically.</div>`; return; }
+  if(!people.length){ el.innerHTML=`<div class="hint">No one else has joined yet. As friends sign up, they’ll appear here automatically.</div>`; return; }
   el.innerHTML=people.map(p=>{ const on=fset.has(p.id);
     return `<div class="disc-row">
       <div class="disc-tap" data-uid="${p.id}">${avatarEl(p,'disc')}
-        <div class="disc-main"><div class="disc-name">${esc(p.display_name||('@'+p.handle))}</div><div class="disc-handle">@${esc(p.handle)}</div></div></div>
-      <button class="disc-follow${on?' following':''}" data-h="${p.handle}" ${on?'disabled':''}>${on?'Following ✓':'Follow'}</button>
+        <div class="disc-main"><div class="disc-name">${esc(p.display_name||('@'+(p.handle||'friend')))}</div><div class="disc-handle">${p.handle?('@'+esc(p.handle)):'on Morning Grind'}</div></div></div>
+      <button class="disc-follow${on?' following':''}" data-uid="${p.id}" ${on?'disabled':''}>${on?'Following ✓':'Follow'}</button>
     </div>`; }).join('');
   el.querySelectorAll('.disc-tap[data-uid]').forEach(t=>{ t.onclick=()=>openProfile(t.dataset.uid); });
   el.querySelectorAll('.disc-follow:not(.following)').forEach(b=> b.onclick=async()=>{
     b.disabled=true; b.textContent='…';
-    const err=await window.MGSync.follow(b.dataset.h);
+    const err=await window.MGSync.followId(b.dataset.uid);
     if(err){ b.disabled=false; b.textContent='Follow'; toast('⚠️ '+err); }
     else { b.textContent='Following ✓'; b.classList.add('following'); loadProfileCard(); loadFeed(); } });
 }
@@ -773,7 +773,7 @@ async function loadProfileCard(){
     ${p.goals?`<div class="pf-sec">🎯 <b>Goals</b> · ${esc(p.goals)}</div>`:''}
     ${p.quote?`<div class="pf-sec">❝ <b>Quote</b> · ${esc(p.quote)}</div>`:''}
     ${p.movie?`<div class="pf-sec">🎬 <b>Movie</b> · ${esc(p.movie)}</div>`:''}
-    <div class="hint" style="margin-top:12px">Following ${following.length} ${following.length===1?'friend':'friends'}${following.length?': '+following.map(f=>'@'+(f.handle||'?')).join(', '):''}</div>`;
+    <div class="hint" style="margin-top:12px">Following ${following.length} ${following.length===1?'friend':'friends'}${following.length?': '+following.map(f=> f.handle?('@'+esc(f.handle)):esc(f.display_name||'friend')).join(', '):''}</div>`;
   $('#editProfile').onclick=openProfileEdit;
 }
 async function openProfileEdit(){
@@ -906,7 +906,7 @@ async function openProfile(id){
   const total=(days||[]).length;
   const followBtn = isMe ? '' : (amFollowing
     ? `<button class="btn btn-ghost" id="pvUnfollow" style="margin-bottom:14px">Following ✓ · tap to unfollow</button>`
-    : (p.handle?`<button class="btn btn-primary" id="pvFollow" data-h="${esc(p.handle)}" style="margin-bottom:14px">Follow</button>`:''));
+    : `<button class="btn btn-primary" id="pvFollow" data-uid="${esc(id)}" style="margin-bottom:14px">Follow</button>`);
   body.innerHTML=`
     <div class="prof-hero">${avatarEl(p,'hero')}
       <div class="prof-hero-name">${esc(p.display_name||('@'+(p.handle||'friend')))}</div>
@@ -923,7 +923,7 @@ async function openProfile(id){
     <div class="sheet-label">Recent workouts</div>
     ${ (days&&days.length) ? days.slice(0,20).map(profileWorkoutCard).join('') : `<div class="hint">${(isMe||amFollowing)?'No completed workouts yet.':'Follow to see their workouts.'}</div>` }`;
   const fb=wrap.querySelector('#pvFollow'); if(fb) fb.onclick=async()=>{ fb.disabled=true; fb.textContent='…';
-    const err=await window.MGSync.follow(fb.dataset.h);
+    const err=await window.MGSync.followId(fb.dataset.uid);
     if(err){ fb.disabled=false; fb.textContent='Follow'; toast('⚠️ '+err); }
     else { close(); toast('✅ Followed'); if(TAB==='feed') paintFeedPane(); } };
   const ub=wrap.querySelector('#pvUnfollow'); if(ub) ub.onclick=async()=>{ ub.disabled=true;

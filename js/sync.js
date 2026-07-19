@@ -178,18 +178,23 @@
       if(/duplicate|unique|23505/i.test(error.message||'')) return 'That handle is taken — try another.';
       return error.message || 'Could not save — try again.';
     },
+    // follow directly by user id — works even if they haven't set a handle yet
+    async followId(id){
+      if(!id) return 'Couldn’t find that person.';
+      if(id===uid()) return 'That’s you 🙂';
+      const { error }=await SB.from('follows').insert({ follower:uid(), followee:id });
+      if(error && !/duplicate|unique/i.test(error.message||'')) return error.message; return null; },
     async follow(handle){ const h=String(handle||'').replace(/^@/,'').trim().toLowerCase();
+      if(!h) return 'Enter a handle to follow.';
       const { data }=await SB.from('profiles').select('id,handle').eq('handle',h).maybeSingle();
       if(!data) return 'No one found with @'+h;
-      if(data.id===uid()) return 'That’s you 🙂';
-      const { error }=await SB.from('follows').insert({ follower:uid(), followee:data.id });
-      if(error && !/duplicate|unique/i.test(error.message)) return error.message; return null; },
+      return this.followId(data.id); },
     async unfollow(id){ await SB.from('follows').delete().eq('follower',uid()).eq('followee',id); },
     async following(){ const { data:fl }=await SB.from('follows').select('followee').eq('follower',uid());
       const ids=(fl||[]).map(x=>x.followee); if(!ids.length) return [];
       const { data:pf }=await SB.from('profiles').select('*').in('id',ids); return pf||[]; },
-    // everyone on the app who has set a handle (so you can follow without knowing it)
-    async discover(){ const { data }=await SB.from('profiles').select('*').not('handle','is',null).neq('id',uid()).order('display_name').limit(60); return data||[]; },
+    // everyone else on the app — so you can follow friends even before they pick a handle
+    async discover(){ const { data }=await SB.from('profiles').select('*').neq('id',uid()).order('display_name').limit(60); return data||[]; },
     async feed(){ const { data:fl }=await SB.from('follows').select('followee').eq('follower',uid());
       const ids=[...new Set([uid(), ...((fl||[]).map(x=>x.followee))])]; // you + everyone you follow
       const [{ data:days }, { data:pf }]=await Promise.all([
