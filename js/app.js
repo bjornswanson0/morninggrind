@@ -446,11 +446,11 @@ function openAICustom(){
   wrap.querySelector('#aiGo').onclick=async()=>{
     const prompt=ta.value.trim();
     if(!prompt) return msg('Type a few words about the workout you want.');
-    if(location.protocol==='file:') return msg('AI workouts run on the live site (morninggrind.netlify.app), not this local file preview.');
+    if(location.protocol==='file:') return msg('AI workouts run on the live site, not this local file preview.');
     const btn=wrap.querySelector('#aiGo'); btn.disabled=true; const label=btn.textContent; btn.textContent='Programming your session… 💪';
     try{
       const maxes = (typeof getMaxes==='function') ? getMaxes() : {};
-      const res=await fetch('/.netlify/functions/workout',{ method:'POST', headers:{'content-type':'application/json'},
+      const res=await fetch('/api/workout',{ method:'POST', headers:{'content-type':'application/json'},
         body:JSON.stringify({ prompt, maxes }) });
       const data=await res.json().catch(()=>({error:'Unexpected response.'}));
       if(!res.ok || data.error){ btn.disabled=false; btn.textContent=label; return msg('⚠️ '+(data.error||'Could not generate — try again.')); }

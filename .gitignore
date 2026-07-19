@@ -7,8 +7,8 @@ desktop.ini
 .vscode/
 .idea/
 
-# Netlify local state
-.netlify/
+# Cloudflare / Wrangler local state
+.wrangler/
 
 # Node (not used today, but just in case)
 node_modules/

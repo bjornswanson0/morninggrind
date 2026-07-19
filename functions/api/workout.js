@@ -1,38 +1,43 @@
-/* Morning Grind — AI custom-workout generator (Netlify serverless function).
+/* Morning Grind — AI custom-workout generator (Cloudflare Pages Function).
    Holds your Anthropic API key server-side (never shipped to the browser) and
    asks Claude to turn a free-form prompt into a structured workout.
 
-   Setup: in Netlify → Site settings → Environment variables, add
-     ANTHROPIC_API_KEY = sk-ant-...   (create one at console.anthropic.com)
+   Route: POST /api/workout  (Cloudflare Pages maps functions/api/workout.js here).
 
-   Model: Haiku 4.5 is the default because Netlify's synchronous functions time
-   out at ~10s, and Haiku returns a full session in a few seconds for a fraction
-   of a cent. Want higher-quality programming and don't mind the wait/cost? Swap
-   MODEL to 'claude-sonnet-5' or 'claude-opus-4-8' below. */
+   Setup: in Cloudflare → your Pages project → Settings → Environment variables,
+   add ANTHROPIC_API_KEY = sk-ant-...   (create one at console.anthropic.com).
+
+   Model: Haiku 4.5 returns a full session in a few seconds for a fraction of a
+   cent. Want higher-quality programming and don't mind the wait/cost? Swap MODEL
+   to 'claude-sonnet-5' or 'claude-opus-4-8' below. */
 
 const MODEL = 'claude-haiku-4-5';
 
 const GROUPS = ['pressH','pressV','chestIso','latRaise','tricepsIso','core','squat','hinge',
   'lunge','hamIso','calf','pullV','rowH','rearDelt','bicepIso','condition','plyo','glute','mobility',''];
 
-exports.handler = async (event) => {
-  const cors = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
-  };
-  if (event.httpMethod === 'OPTIONS') return { statusCode: 204, headers: cors };
-  if (event.httpMethod !== 'POST') return { statusCode: 405, headers: cors, body: JSON.stringify({ error: 'POST only' }) };
+const CORS = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'POST, OPTIONS',
+};
+const json = (obj, status = 200) =>
+  new Response(JSON.stringify(obj), { status, headers: { ...CORS, 'content-type': 'application/json' } });
 
-  const key = process.env.ANTHROPIC_API_KEY;
-  if (!key) return { statusCode: 500, headers: cors, body: JSON.stringify({
-    error: 'The workout generator isn’t set up yet — add ANTHROPIC_API_KEY in Netlify → Site settings → Environment variables, then redeploy.' }) };
+export async function onRequest(context) {
+  const { request, env } = context;
+  if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
+  if (request.method !== 'POST') return json({ error: 'POST only' }, 405);
+
+  const key = env.ANTHROPIC_API_KEY;
+  if (!key) return json({
+    error: 'The workout generator isn’t set up yet — add ANTHROPIC_API_KEY in Cloudflare → your Pages project → Settings → Environment variables, then redeploy.' }, 500);
 
   let body = {};
-  try { body = JSON.parse(event.body || '{}'); } catch {}
-  const prompt = String(body.prompt || '').slice(0, 600).trim();
-  if (!prompt) return { statusCode: 400, headers: cors, body: JSON.stringify({ error: 'Tell me what kind of workout you want.' }) };
-  const maxes = (body.maxes && typeof body.maxes === 'object') ? body.maxes : {};
+  try { body = await request.json(); } catch {}
+  const prompt = String((body && body.prompt) || '').slice(0, 600).trim();
+  if (!prompt) return json({ error: 'Tell me what kind of workout you want.' }, 400);
+  const maxes = (body && body.maxes && typeof body.maxes === 'object') ? body.maxes : {};
 
   const oneRM = Object.assign({ squat: 285, deadlift: 365, bench: 215, incline: 185, ohp: 130, row: 185 }, maxes);
 
@@ -92,14 +97,14 @@ Respect the athlete's request (soreness, time limits, equipment they want to avo
       }),
     });
     const data = await resp.json();
-    if (!resp.ok) return { statusCode: 502, headers: cors, body: JSON.stringify({ error: (data.error && data.error.message) || 'Claude API error.' }) };
-    if (data.stop_reason === 'refusal') return { statusCode: 200, headers: cors, body: JSON.stringify({ error: 'That request was declined — try describing the workout differently.' }) };
+    if (!resp.ok) return json({ error: (data.error && data.error.message) || 'Claude API error.' }, 502);
+    if (data.stop_reason === 'refusal') return json({ error: 'That request was declined — try describing the workout differently.' }, 200);
 
     const txt = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
     let workout;
-    try { workout = JSON.parse(txt); } catch { return { statusCode: 502, headers: cors, body: JSON.stringify({ error: 'Could not read the workout — try again.' }) }; }
-    return { statusCode: 200, headers: { ...cors, 'content-type': 'application/json' }, body: JSON.stringify(workout) };
+    try { workout = JSON.parse(txt); } catch { return json({ error: 'Could not read the workout — try again.' }, 502); }
+    return json(workout, 200);
   } catch (e) {
-    return { statusCode: 502, headers: cors, body: JSON.stringify({ error: 'Network error reaching Claude — try again in a moment.' }) };
+    return json({ error: 'Network error reaching Claude — try again in a moment.' }, 502);
   }
-};
+}
