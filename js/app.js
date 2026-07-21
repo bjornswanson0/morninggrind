@@ -127,15 +127,16 @@ function render(){
 function profileNudge(){
   if(!(window.MGSync && MGSync.signedIn && MGSync.signedIn() && MGSync.profile)) return null;
   const p = MGSync.profile(); if(!p) return null; // not loaded yet — don't flash a guess
-  const items=[
-    {ok:!!p.handle, label:'Pick a @handle so friends can find you'},
+  // A @handle is the one thing that makes a profile real & findable. Once it's set,
+  // the profile is "set up" — never nudge again (photo/goals are just nice extras).
+  if(p.handle) return null;
+  let snooze=0; try{ snooze=+localStorage.getItem('mg_pf_nudge_snooze')||0; }catch{}
+  if(Date.now()<snooze) return null;
+  return [
+    {ok:false, label:'Pick a @handle so friends can find you'},
     {ok:!!p.avatar, label:'Add a profile photo'},
     {ok:!!p.goals,  label:'Write down your training goals'},
   ];
-  if(items.every(i=>i.ok)) return null;
-  let snooze=0; try{ snooze=+localStorage.getItem('mg_pf_nudge_snooze')||0; }catch{}
-  if(Date.now()<snooze) return null;
-  return items;
 }
 function nudgeHTML(items){
   const done=items.filter(i=>i.ok).length;
