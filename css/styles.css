@@ -248,12 +248,12 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .seg button{border:none; background:none; color:var(--muted); font-weight:700; font-size:13px; padding:8px 13px; border-radius:4px; cursor:pointer; transition:background .15s, color .15s}
 .seg button.on{background:var(--surface); color:var(--blue3); box-shadow:var(--shadow)}
 
-/* Sync status bar */
-.authbar{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 18px; font-size:13px; font-weight:700; max-width:640px; margin:0 auto}
-.authbar.in{color:var(--ok)}
-.authbar.out{color:var(--tan-deep)}
-.authbar button{border:none; background:var(--blue); color:#fff; padding:8px 14px; border-radius:5px; font-weight:700; font-size:12px; cursor:pointer}
-.authbar button:active{transform:scale(.96)}
+/* Sync status — header-ribbon icon (matches theme toggle + streak) */
+.hdr-btn.synced .ico{color:#C9B491}
+.hdr-btn.offline .ico{color:#E7B15E}
+.sync-acct{display:flex; align-items:center; gap:10px; font-size:14.5px; font-weight:600; color:var(--ink); background:var(--soft); border:1px solid var(--line); border-radius:6px; padding:13px 15px}
+.sync-acct .ico{color:var(--ok); flex:none}
+.sync-acct b{font-weight:800}
 .au-forgot{display:block; width:100%; background:none; border:none; color:var(--muted); font-weight:600; font-size:13px; padding:10px 0 2px; cursor:pointer; text-decoration:underline}
 .au-forgot:active{color:var(--blue3)}
 

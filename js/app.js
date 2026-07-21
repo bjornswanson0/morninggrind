@@ -182,28 +182,11 @@ function viewToday(){
     </div>`;
   }).join('');
   const pct = totT ? Math.round(100*totD/totT) : 0;
-  const st=streak(), wd=weekDone(), ovC = pct>=100?'var(--ok)':'var(--blue)';
-  const ov = `
-    <div class="card ov">
-      <div class="ov-title">Overview</div>
-      <div class="ov-rings">
-        <div class="ov-ring ov-sm" style="--p:${Math.min(st,7)/7*100}; --c:var(--tan)">
-          <div class="ov-ctr"><b>${st}</b><small>STREAK</small></div>
-        </div>
-        <div class="ov-ring ov-big" style="--p:${pct}; --c:${ovC}">
-          <div class="ov-ctr"><b>${pct}<i>%</i></b><small>TODAY</small></div>
-        </div>
-        <div class="ov-ring ov-sm" style="--p:${wd/7*100}; --c:var(--ok)">
-          <div class="ov-ctr"><b>${wd}<i>/7</i></b><small>THIS WK</small></div>
-        </div>
-      </div>
-    </div>`;
   const w=latestWeight(), a=avg7();
   const wLine = w!=null ? `${icon('scale',13)} ${w} lb${a!=null?` · 7-day avg ${a.toFixed(1)}`:''} · target 158`
                         : 'No weight logged yet — add tonight’s below to start your chart.';
   return `
     ${nudge?nudgeHTML(nudge):''}
-    ${ov}
     <div class="card">
       <div class="verse">${o.verse}<span class="ref">— ${o.ref}</span></div>
       <div class="why">${icon('bulb',15)} <b>Why this matters:</b> ${o.why}</div>
@@ -571,6 +554,29 @@ function weatherHTML(c, place){
       <div class="wx-rec">${rec}</div></div></div>`;
 }
 
+/* Overview rings — today's completion + streak + this-week (lives on Progress) */
+function overviewCard(){
+  const log=ensureLog(todayKey); let totT=0, totD=0;
+  effList().forEach((_,i)=>{ if(isRemoved(i)) return; const e=resolvedEx(i); const tg=target(e); totT+=tg; totD+=Math.min(log.sets[i]||0,tg); });
+  const pct = totT ? Math.round(100*totD/totT) : 0;
+  const st=streak(), wd=weekDone(), ovC = pct>=100?'var(--ok)':'var(--blue)';
+  return `
+    <div class="card ov">
+      <div class="ov-title">Overview</div>
+      <div class="ov-rings">
+        <div class="ov-ring ov-sm" style="--p:${Math.min(st,7)/7*100}; --c:var(--tan)">
+          <div class="ov-ctr"><b>${st}</b><small>STREAK</small></div>
+        </div>
+        <div class="ov-ring ov-big" style="--p:${pct}; --c:${ovC}">
+          <div class="ov-ctr"><b>${pct}<i>%</i></b><small>TODAY</small></div>
+        </div>
+        <div class="ov-ring ov-sm" style="--p:${wd/7*100}; --c:var(--ok)">
+          <div class="ov-ctr"><b>${wd}<i>/7</i></b><small>THIS WK</small></div>
+        </div>
+      </div>
+    </div>`;
+}
+
 /* ---------- progress tab ---------- */
 function viewProgress(){
   const w=latestWeight(), a=avg7();
@@ -578,8 +584,8 @@ function viewProgress(){
     <div class="pr-item"><span>${p.lift}</span><b>${p.w} lb</b><span style="color:var(--muted)">${p.date.slice(5)}</span></div>`).join('')
     || '<div class="hint">No PRs yet — log your bests below.</div>';
   return `
+    ${overviewCard()}
     <div class="stat-row">
-      <div class="stat"><div class="n">${streak()}</div><div class="l">day streak</div></div>
       <div class="stat"><div class="n">${monthCount()}</div><div class="l">this month</div></div>
       <div class="stat"><div class="n">${w!=null?w:'—'}</div><div class="l">latest lb</div></div>
     </div>
@@ -695,7 +701,7 @@ function viewFeed(){
     <div id="feedPane"></div>`;
 }
 function wireFeed(){
-  const si=$('#feedSignIn'); if(si){ si.onclick=()=>{ const b=$('#signInBtn'); if(b) b.click(); }; return; }
+  const si=$('#feedSignIn'); if(si){ si.onclick=()=>{ if(window.MGSync && MGSync.openAuth) MGSync.openAuth(); }; return; }
   document.querySelectorAll('.feed-seg button').forEach(b=> b.onclick=()=>{
     FEEDSUB=b.dataset.fs;
     document.querySelectorAll('.feed-seg button').forEach(x=>x.classList.toggle('on', x===b));

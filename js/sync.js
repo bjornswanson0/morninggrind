@@ -12,16 +12,35 @@
   const titleFor = k => { const cn=LOGS[k]&&LOGS[k].customName; return cn || (typeof sessionFor==='function' ? sessionFor(k).title : ''); };
   const tagFor   = k => (typeof sessionFor==='function' ? sessionFor(k).tag   : '');
 
-  /* ---- status bar under the header ---- */
+  /* ---- sync status as a header-ribbon icon (sits with the theme + streak controls) ---- */
+  function syncBtn(){
+    let b=document.getElementById('syncBtn');
+    if(!b){ const hdr=document.querySelector('.app-header'), tt=document.getElementById('themeToggle');
+      if(!hdr) return null;
+      b=document.createElement('button'); b.id='syncBtn'; b.className='hdr-btn';
+      hdr.insertBefore(b, tt || null); }
+    return b;
+  }
   function bar(){
-    let el=document.getElementById('authBar');
-    if(!el){ el=document.createElement('div'); el.id='authBar'; const v=document.getElementById('view'); v.parentNode.insertBefore(el, v); }
-    if(USER){ el.className='authbar in';
-      el.innerHTML=`<span>☁️ Synced · ${USER.email}</span><button id="signOut">Sign out</button>`;
-      el.querySelector('#signOut').onclick=async()=>{ await SB.auth.signOut(); toast&&toast('Signed out'); };
-    } else { el.className='authbar out';
-      el.innerHTML=`<span>⚠️ Not syncing (local only)</span><button id="signInBtn">Sign in to sync</button>`;
-      el.querySelector('#signInBtn').onclick=openAuth; }
+    const b=syncBtn(); if(!b) return; const ic=(typeof icon==='function')?icon:(n=>'');
+    if(USER){ b.className='hdr-btn synced'; b.setAttribute('aria-label','Synced — account options');
+      b.title='Synced to the cloud'; b.innerHTML=ic('cloudCheck',18); b.onclick=openSyncSheet;
+    } else { b.className='hdr-btn offline'; b.setAttribute('aria-label','Not syncing — sign in');
+      b.title='Not syncing (local only)'; b.innerHTML=ic('cloudOff',18); b.onclick=openAuth; }
+  }
+  function openSyncSheet(){
+    const ic=(typeof icon==='function')?icon:(n=>'');
+    const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
+    wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
+      <div class="sheet-title">Cloud sync</div>
+      <div class="hint" style="margin-bottom:14px">Your workouts, weights, and PRs are backed up and synced across every device you sign in on.</div>
+      <div class="sync-acct">${ic('cloudCheck',18)} <span>Signed in as <b>${(USER&&USER.email)||''}</b></span></div>
+      <button class="btn btn-ghost" id="syncSignOut" style="margin-top:16px">Sign out</button>
+      <button class="sheet-skip" id="syncClose">Close</button></div>`;
+    document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
+    const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
+    wrap.querySelector('#syncClose').onclick=close; wrap.onclick=e=>{ if(e.target===wrap) close(); };
+    wrap.querySelector('#syncSignOut').onclick=async()=>{ close(); await SB.auth.signOut(); toast&&toast('Signed out'); };
   }
   function openAuth(){
     let savedEmail=''; try{ savedEmail = localStorage.getItem('mg_email')||''; }catch{}
@@ -201,7 +220,7 @@
 
   window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER, myId:()=>uid(), flush,
     displayName:()=> (PROFILE&&PROFILE.display_name) || (USER&&USER.email ? USER.email.split('@')[0] : ''),
-    profile:()=>PROFILE,
+    profile:()=>PROFILE, openAuth,
     reloadProfile:async()=>{ await loadProfile(); if(typeof render==='function') render(); } }, social);
 
   async function init(){
