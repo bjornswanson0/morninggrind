@@ -6,7 +6,8 @@
   });
   let USER = null, pushT = null, PROFILE = null;
   const uid = ()=> USER && USER.id;
-  async function loadProfile(){ if(!USER){ PROFILE=null; return; } try{ const { data }=await SB.from('profiles').select('*').eq('id',uid()).maybeSingle(); PROFILE=data||null; }catch{} }
+  // PROFILE: null = signed out or not loaded yet; {} = loaded but no row saved
+  async function loadProfile(){ if(!USER){ PROFILE=null; return; } try{ const { data }=await SB.from('profiles').select('*').eq('id',uid()).maybeSingle(); PROFILE=data||{}; }catch{} }
   const mergeSets = (a,b)=>{ a=a||[]; b=b||[]; const n=Math.max(a.length,b.length), o=[]; for(let i=0;i<n;i++) o.push(Math.max(a[i]||0,b[i]||0)); return o; };
   const titleFor = k => { const cn=LOGS[k]&&LOGS[k].customName; return cn || (typeof sessionFor==='function' ? sessionFor(k).title : ''); };
   const tagFor   = k => (typeof sessionFor==='function' ? sessionFor(k).tag   : '');
@@ -200,6 +201,7 @@
 
   window.MGSync = Object.assign({ onLocalChange:queuePush, signedIn:()=>!!USER, myId:()=>uid(), flush,
     displayName:()=> (PROFILE&&PROFILE.display_name) || (USER&&USER.email ? USER.email.split('@')[0] : ''),
+    profile:()=>PROFILE,
     reloadProfile:async()=>{ await loadProfile(); if(typeof render==='function') render(); } }, social);
 
   async function init(){

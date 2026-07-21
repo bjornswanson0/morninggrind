@@ -97,6 +97,15 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
   padding:14px; border-radius:var(--radius); border:1px solid var(--line); transition:transform .12s, background .15s}
 .playlist:active{transform:scale(.98); background:var(--panel)}
 
+/* Profile-completion nudge */
+.nudge{border-top:2px solid var(--tan)}
+.nudge-row{display:flex; align-items:center; gap:9px; padding:7px 2px; font-size:13.5px; color:var(--sub); font-weight:600}
+.nudge-row .ico{color:var(--muted)}
+.nudge-row.ok{color:var(--muted); text-decoration:line-through; text-decoration-color:var(--line)}
+.nudge-row.ok .ico{color:var(--ok)}
+.nudge-actions{display:flex; gap:8px; margin-top:14px}
+.nudge-actions .btn{flex:1; padding:13px; font-size:14px}
+
 /* Weather */
 .weather-card{padding:16px 18px}
 .wx{display:flex; align-items:center; gap:14px}

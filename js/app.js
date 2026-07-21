@@ -123,9 +123,37 @@ function render(){
   if(TAB==='today'){ wireToday(); paintWeather(); } else if(TAB==='progress'){ wireProgress(); } else { wireFeed(); }
 }
 
+/* ---------- profile-completion nudge (shows on Today after sign-in) ---------- */
+function profileNudge(){
+  if(!(window.MGSync && MGSync.signedIn && MGSync.signedIn() && MGSync.profile)) return null;
+  const p = MGSync.profile(); if(!p) return null; // not loaded yet — don't flash a guess
+  const items=[
+    {ok:!!p.handle, label:'Pick a @handle so friends can find you'},
+    {ok:!!p.avatar, label:'Add a profile photo'},
+    {ok:!!p.goals,  label:'Write down your training goals'},
+  ];
+  if(items.every(i=>i.ok)) return null;
+  let snooze=0; try{ snooze=+localStorage.getItem('mg_pf_nudge_snooze')||0; }catch{}
+  if(Date.now()<snooze) return null;
+  return items;
+}
+function nudgeHTML(items){
+  const done=items.filter(i=>i.ok).length;
+  return `<div class="card nudge">
+    <div class="section-title">${icon('userPlus')} Finish your profile</div>
+    <div class="hint" style="margin:0 0 8px">${done} of ${items.length} done — a complete profile is how friends find and follow you on the feed.</div>
+    ${items.map(i=>`<div class="nudge-row ${i.ok?'ok':''}">${icon(i.ok?'checkCircle':'circle',15)} ${i.label}</div>`).join('')}
+    <div class="nudge-actions">
+      <button class="btn btn-primary" id="nudgeGo">Complete profile</button>
+      <button class="btn btn-ghost" id="nudgeLater">Later</button>
+    </div>
+  </div>`;
+}
+
 function viewToday(){
   const log = ensureLog(todayKey);
   const o = openerFor(today);
+  const nudge = profileNudge();
   let totT=0, totD=0;
   const removedList=[];
   const rows = effList().map((_,i)=>{
@@ -173,6 +201,7 @@ function viewToday(){
   const wLine = w!=null ? `${icon('scale',13)} ${w} lb${a!=null?` · 7-day avg ${a.toFixed(1)}`:''} · target 158`
                         : 'No weight logged yet — add tonight’s below to start your chart.';
   return `
+    ${nudge?nudgeHTML(nudge):''}
     ${ov}
     <div class="card">
       <div class="verse">${o.verse}<span class="ref">— ${o.ref}</span></div>
@@ -244,6 +273,10 @@ function wireToday(){
   };
   const de = $('#dbEdit') || $('#dbAdd'); if(de) de.onclick = openDebrief;
   const cw = $('#changeWk'); if(cw) cw.onclick = openWorkoutPicker;
+  const ng=$('#nudgeGo'); if(ng) ng.onclick=openProfileEdit;
+  const nl=$('#nudgeLater'); if(nl) nl.onclick=()=>{
+    try{ localStorage.setItem('mg_pf_nudge_snooze', String(Date.now()+3*864e5)); }catch{}
+    render(); toast('Okay — I’ll ask again in a few days'); };
   $('#wSave').onclick = ()=>{
     const v=parseFloat($('#wInput').value); if(!v||v<80||v>400) return toast('Enter a valid weight');
     WEIGHTS=WEIGHTS.filter(x=>x.date!==todayKey); WEIGHTS.push({date:todayKey,w:v});
