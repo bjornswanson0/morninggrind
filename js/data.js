@@ -74,21 +74,21 @@ const SPLIT = {
 const A = (name, load) => ({ name, load: String(load) });
 const ALTS = {
   pressH: [A('Flat Barbell Bench',175),A('Flat DB Press',70),A('Incline DB Press',60),A('Machine Chest Press',140),A('Weighted Dip','+25'),A('Push-up','BW')],
-  pressV: [A('Seated DB Shoulder Press',55),A('Machine Shoulder Press',100),A('Arnold Press',45),A('Push Press',115),A('Landmine Press',70)],
+  pressV: [A('Seated DB Shoulder Press',55),A('Machine Shoulder Press',100),A('Arnold Press',45),A('Push Press',115),A('Landmine Press',70),A('Single-Arm KB Press',40)],
   chestIso: [A('Pec-Deck Machine',100),A('Incline Cable Fly',25),A('Dumbbell Fly',30),A('Low-to-High Cable Fly',20)],
   latRaise: [A('DB Lateral Raise',20),A('Machine Lateral Raise',60),A('Cable Y-Raise',15),A('Leaning Cable Lateral',15)],
   tricepsIso: [A('Overhead Cable Ext',60),A('Skull Crushers',60),A('Triceps Dip Machine',120),A('DB Kickback',20),A('Close-Grip Bench',135)],
-  core: [A('Cable Crunch',90),A('Hanging Knee Raise','BW'),A('Ab-Wheel Rollout','BW'),A('Plank','60s'),A('Weighted Decline Sit-up','+25')],
+  core: [A('Cable Crunch',90),A('Hanging Knee Raise','BW'),A('Ab-Wheel Rollout','BW'),A('Plank','60s'),A('Weighted Decline Sit-up','+25'),A('KB Turkish Get-up',35),A('KB Farmer Carry','70/hand')],
   squat: [A('Front Squat',185),A('Hack Squat',180),A('Leg Press',360),A('Bulgarian Split Squat',40),A('Pendulum Squat',160),A('Goblet Squat',70)],
-  hinge: [A('Romanian Deadlift',185),A('Trap-Bar Deadlift',275),A('Conventional Deadlift',255),A('Good Morning',95),A('Cable Pull-Through',90),A('Back Extension','BW')],
-  lunge: [A('Walking Lunge',40),A('Reverse Lunge',40),A('Bulgarian Split Squat',40),A('Step-Up',35),A('Split Squat',45)],
+  hinge: [A('Romanian Deadlift',185),A('Trap-Bar Deadlift',275),A('Conventional Deadlift',255),A('Good Morning',95),A('Cable Pull-Through',90),A('Back Extension','BW'),A('Kettlebell Swing',53),A('KB Romanian Deadlift','53/hand')],
+  lunge: [A('Walking Lunge',40),A('Reverse Lunge',40),A('Bulgarian Split Squat',40),A('Step-Up',35),A('Split Squat',45),A('KB Goblet Reverse Lunge',40)],
   hamIso: [A('Lying Leg Curl',90),A('Seated Leg Curl',100),A('Nordic Curl','BW'),A('Glute-Ham Raise','BW')],
   calf: [A('Standing Calf Raise',180),A('Seated Calf Raise',90),A('Leg-Press Calf Raise',200),A('Single-Leg Calf Raise',30)],
   pullV: [A('Lat Pulldown',120),A('Weighted Pull-up','+35'),A('Neutral-Grip Pulldown',120),A('Assisted Pull-up','-30'),A('Straight-Arm Pulldown',50)],
-  rowH: [A('Chest-Supported Row',90),A('Seated Cable Row',130),A('One-Arm DB Row',75),A('T-Bar Row',115),A('Pendlay Row',135)],
+  rowH: [A('Chest-Supported Row',90),A('Seated Cable Row',130),A('One-Arm DB Row',75),A('T-Bar Row',115),A('Pendlay Row',135),A('KB Gorilla Row','53/hand')],
   rearDelt: [A('Face Pull',40),A('Rear Delt Fly',20),A('Reverse Pec-Deck',90),A('Cable Rear Delt',15)],
   bicepIso: [A('Incline DB Curl',30),A('EZ-Bar Curl',60),A('Hammer Curl',35),A('Cable Curl',70),A('Preacher Curl',55),A('Spider Curl',30)],
-  condition: [A('Outdoor Run','steady'),A('Treadmill Run','steady'),A('Pool Swim','easy'),A('Rowing Machine','moderate'),A('Assault Bike','hard'),A('Stair Climber','steady'),A('Incline Treadmill Walk','brisk'),A('Elliptical','steady'),A('Jump Rope','intervals')],
+  condition: [A('Outdoor Run','steady'),A('Treadmill Run','steady'),A('Pool Swim','easy'),A('Rowing Machine','moderate'),A('Assault Bike','hard'),A('Stair Climber','steady'),A('Incline Treadmill Walk','brisk'),A('Elliptical','steady'),A('Jump Rope','intervals'),A('KB Swing EMOM','10 min')],
   plyo: [A('Box Jump','BW'),A('Trap-Bar Jump',155),A('Broad Jump','BW'),A('Med-Ball Slam',20),A('Kettlebell Swing',55),A('Depth Jump','BW')],
   glute: [A('Hip Thrust',185),A('Glute Bridge',135),A('Cable Kickback',30),A('Back Extension','BW'),A('Bulgarian Split Squat',40)],
   mobility: [A('Mobility Flow','10 min'),A('Yoga Flow','15 min'),A('Foam Rolling','10 min'),A('Dynamic Stretch','8 min'),A('Cat-Cow + Hips','8 min')],
@@ -98,6 +98,18 @@ function optionsFor(e){
   const out=[{name:e.name, load:e.load}]; const seen=new Set([e.name]);
   ((e.g && ALTS[e.g]) || []).forEach(a=>{ if(!seen.has(a.name)){ seen.add(a.name); out.push(a); } });
   return out;
+}
+
+// Weekly accessory rotation — the first two slots (anchor lifts) stay fixed for
+// progression; later slots with a swap pool rotate deterministically each calendar
+// week, so the same weekday reads differently week to week. Conditioning and
+// mobility slots stay as planned (the weather card already steers those).
+// Only applies to the default split — picked/AI/custom sessions render as authored.
+function weekSeed(k){ const d=new Date(k+'T12:00'); const jan1=new Date(d.getFullYear(),0,1); return d.getFullYear()*53 + Math.floor((Math.floor((d-jan1)/864e5)+jan1.getDay())/7); }
+const weekMixLetter = k => String.fromCharCode(65 + weekSeed(k)%4);
+function defaultIdx(e,i,k){
+  if(i<2 || !e.g || e.g==='condition' || e.g==='mobility' || !ALTS[e.g] || !ALTS[e.g].length) return 0;
+  return (weekSeed(k) + i*3) % optionsFor(e).length;
 }
 
 // Full-session registry — the 7 split days (by tag) + extra "pick a different workout" options
@@ -132,6 +144,15 @@ SESSIONS.cardio = { title:'Cardio Session', tag:'cardio', outdoor:true, playlist
   ex('Steady Cardio',1,'15 min','moderate','-','condition'),
   ex('Cool-down Walk',1,'5 min','easy','-','condition'),
 ]};
+SESSIONS.kettlebell = { title:'Kettlebell Strength & Flow', tag:'kettlebell', outdoor:false, playlist:PL('Kettlebell Workout'), ex:[
+  ex('Kettlebell Swing',5,15,53,8,'hinge'),
+  ex('KB Goblet Squat',4,10,53,8,'squat'),
+  ex('KB Clean & Press',4,'8/side',35,8,'pressV'),
+  ex('KB Gorilla Row',4,'10/side',53,8,'rowH'),
+  ex('KB Goblet Reverse Lunge',3,'10/side',40,8,'lunge'),
+  ex('KB Turkish Get-up',3,'2/side',35,7,'core'),
+  ex('KB Farmer Carry',3,'40 yd','70/hand',8,'core'),
+]};
 SESSIONS.mobility = { title:'Mobility & Recovery', tag:'mobility', outdoor:false, playlist:PL('Stretching & Recovery'), ex:[
   ex('Full-Body Mobility Flow',1,'12 min','easy','-','mobility'),
   ex('Foam Rolling',1,'8 min','full body','-','mobility'),
@@ -146,6 +167,7 @@ const SESSION_PICKER = [
   {key:'legs', emoji:'🦵', label:'Lower / Legs'},
   {key:'pump', emoji:'🔥', label:'Arms & Delts'},
   {key:'power', emoji:'⚡', label:'Athletic / Power'},
+  {key:'kettlebell', emoji:'🔔', label:'Kettlebell'},
   {key:'fullbody', emoji:'🏋️', label:'Full Body'},
   {key:'conditioning', emoji:'🏞️', label:'Long Conditioning'},
   {key:'cardio', emoji:'❤️', label:'Cardio Session'},
@@ -186,10 +208,84 @@ const OPENERS = [
   { verse:'"You will never always be motivated. You have to learn to be disciplined."', ref:'David Goggins',
     why:'Goggins’ whole message: feelings are unreliable teammates — motivation shows up when it wants, discipline shows up on schedule. The days you don’t feel like it are the ones that actually build the identity. Do the work anyway, and “someone who follows through” stops being a goal and becomes who you are.',
     song:'Numb / Encore', artist:'Jay-Z & Linkin Park' },
+  { verse:'"This is the day the Lord has made; let us rejoice and be glad in it."', ref:'Psalm 118:24',
+    why:'This was sung walking into the temple — gratitude declared before the day unfolds, not after it goes well. Deciding up front that today is a gift changes how you walk into the gym, the office, everything. Joy first, then work — not work, then maybe joy.',
+    song:'Beautiful Day', artist:'U2' },
+  { verse:'"Let us not become weary in doing good, for at the proper time we will reap a harvest if we do not give up."', ref:'Galatians 6:9',
+    why:'Paul’s promise has exactly one condition: don’t quit before the season turns. Training, saving, building a career — the reps compound quietly long before results show. The harvest is scheduled; your only job is to still be sowing when it arrives.',
+    song:'Started From the Bottom', artist:'Drake' },
+  { verse:'"For though the righteous fall seven times, they rise again."', ref:'Proverbs 24:16',
+    why:'The righteous person’s advantage isn’t never falling — it’s a higher rise count. A missed lift, a bad week, a blown plan: none of that is the story; staying down would be. Get up one more time than you fall and the record still reads “rose.”',
+    song:'Not Afraid', artist:'Eminem' },
+  { verse:'"Whatever you do, work at it with all your heart, as working for the Lord, not for men."', ref:'Colossians 3:23',
+    why:'The audience changes the effort. Nobody sees your 6 AM session or the quiet extra rep — and that’s the point: excellence for an audience of One doesn’t need applause to keep going. Do the unseen work like it’s the main event.',
+    song:'All of the Lights', artist:'Kanye West' },
+  { verse:'"Suffering produces perseverance; perseverance, character; and character, hope."', ref:'Romans 5:3–4',
+    why:'The chain only runs one direction — hope is built at the end of it, not handed out at the start. Every hard set and hard season is the first link doing its job. You don’t get the character without the load.',
+    song:'Survivor', artist:'Destiny’s Child' },
+  { verse:'"Let us throw off everything that hinders… and run with perseverance the race marked out for us."', ref:'Hebrews 12:1',
+    why:'Two moves here: drop the weight that isn’t yours to carry, then run your lane — the race “marked out for us,” not someone else’s. Comparison, old habits, dead-end worries: that’s the baggage. Travel light and run long.',
+    song:'Run This Town', artist:'Jay-Z' },
+  { verse:'"Whatever your hand finds to do, do it with all your might."', ref:'Ecclesiastes 9:10',
+    why:'Solomon’s antidote to a scattered life: full effort on the thing actually in front of you. Half-attention makes everything take twice as long and mean half as much. One session, one task, one conversation — all in, then next.',
+    song:'POWER', artist:'Kanye West' },
+  { verse:'"Do not worry about tomorrow, for tomorrow will worry about itself."', ref:'Matthew 6:34',
+    why:'Jesus isn’t banning planning — he’s banning pre-paying interest on problems that may never arrive. You only ever get strength for today’s load, today’s reps. Do today well; tomorrow comes with its own supply.',
+    song:'Lovely Day', artist:'Bill Withers' },
+  { verse:'"Physical training is of some value, but godliness has value for all things."', ref:'1 Timothy 4:8',
+    why:'Paul — no enemy of discipline — still ranks it: the body is the training ground, not the trophy. The habits you build under the bar — consistency, patience, humility — are meant to travel into how you love people and keep your word. Train the body; aim the discipline higher.',
+    song:'Higher Love', artist:'Steve Winwood' },
+  { verse:'"Let the morning bring me word of your unfailing love, for I have put my trust in you."', ref:'Psalm 143:8',
+    why:'David asks for the reminder in the morning — before decisions, before news, before anyone else’s voice gets in. What you hear first calibrates everything after it. Win the first ten minutes and the day tilts your way.',
+    song:'Here Comes the Sun', artist:'The Beatles' },
+  { verse:'"We suffer more often in imagination than in reality."', ref:'Seneca',
+    why:'Most of the pain of a hard thing is the week spent dreading it — the set lasts forty seconds; the dread ran four days. Seneca’s fix is to walk straight at the feared thing and let reality, which is almost always smaller, replace the projection.',
+    song:'Don’t Stop Me Now', artist:'Queen' },
+  { verse:'"No man is free who is not master of himself."', ref:'Epictetus',
+    why:'A former slave turned philosopher had standing to define freedom — and he didn’t define it as circumstances. Whoever can’t skip the snooze, the scroll, or the impulse is taking orders all day, just not from himself. Every kept promise to yourself buys a piece of freedom back.',
+    song:'Whatever It Takes', artist:'Imagine Dragons' },
+  { verse:'"We must all suffer one of two things: the pain of discipline or the pain of regret."', ref:'Jim Rohn',
+    why:'Both hurt — the difference is timing and price. Discipline costs ounces daily; regret bills you in bulk, years later, with interest. This morning’s alarm was the cheap invoice. Pay small, pay now.',
+    song:'The Show Goes On', artist:'Lupe Fiasco' },
+  { verse:'"Don’t quit. Suffer now and live the rest of your life as a champion."', ref:'Muhammad Ali',
+    why:'The greatest of all time admitted he hated every minute of training — loving the work was never the requirement. The trade he made was pain with an expiration date for pride without one. You don’t have to enjoy every session; you have to refuse the version of you that skipped it.',
+    song:'The Greatest', artist:'Sia' },
+  { verse:'"Waste no more time arguing about what a good man should be. Be one."', ref:'Marcus Aurelius',
+    why:'An emperor writing to himself, tired of his own philosophizing. There’s a version of growth that’s all research — the perfect program, the perfect plan — and it’s procrastination wearing glasses. The argument ends when the work starts.',
+    song:'Man in the Mirror', artist:'Michael Jackson' },
+  { verse:'"Great things come from hard work and perseverance. No excuses."', ref:'Kobe Bryant',
+    why:'Mamba mentality was never about talent — it was 4 AM workouts years after he’d already made it, because the standard was internal. Excuses are always available and always full price. The separator is boring: work, again, today.',
+    song:'All the Way Up', artist:'Fat Joe & Remy Ma' },
+  { verse:'"Consider it pure joy… whenever you face trials of many kinds, because the testing of your faith produces perseverance."', ref:'James 1:2–3',
+    why:'“Consider” is an accounting word — James is telling you how to book the entry, not how to feel. File the hard morning, the heavy set, the tough season under assets, because that’s what they’re building. The test is the training.',
+    song:'Ain’t No Mountain High Enough', artist:'Marvin Gaye & Tammi Terrell' },
+  { verse:'"The Lord is my strength and my shield; my heart trusts in him, and he helps me."', ref:'Psalm 28:7',
+    why:'Strength and shield — offense and defense from the same source. David wrote this in the middle of trouble, not after it resolved: the trust came first, the help followed. Walk into the day covered on both sides.',
+    song:'Stronger (What Doesn’t Kill You)', artist:'Kelly Clarkson' },
+  { verse:'"The only place success comes before work is in the dictionary."', ref:'Vince Lombardi',
+    why:'Lombardi’s teams won on fundamentals repeated past boredom — the same blocking drills, the same six plays. Everyone wants the result; the order of operations is non-negotiable. Show up, do the unglamorous thing again, and let the alphabet be the only place work comes second.',
+    song:'Can’t Stop', artist:'Red Hot Chili Peppers' },
+  { verse:'"The last three or four reps is what makes the muscle grow. This area of pain divides a champion from someone who is not."', ref:'Arnold Schwarzenegger',
+    why:'The first eight reps are the entry fee — growth lives only in the ones you don’t want to do. It’s true past the gym too: the last hour of study, the follow-up call, the edit after “good enough.” Everything worth having sits on the far side of “I’d rather stop.”',
+    song:'Welcome to the Jungle', artist:'Guns N’ Roses' },
 ];
 const spotifySearch = (o) => 'https://open.spotify.com/search/' + encodeURIComponent(o.song + ' ' + o.artist);
 function dayOfYear(d){ const s=new Date(d.getFullYear(),0,0); return Math.floor((d-s)/864e5); }
-function openerFor(d){ return OPENERS[dayOfYear(d) % OPENERS.length]; }
+// No-repeat rotation: today's pick is remembered (stable across re-renders), and the
+// last ~20 shown are excluded, so a quote can't come back for at least 20 days.
+function openerFor(d){
+  const k = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+  let hist=[]; try{ hist=JSON.parse(localStorage.getItem('mg_opener_hist')||'[]'); }catch{}
+  const hit=hist.find(h=>h.date===k);
+  if(hit && OPENERS[hit.idx]) return OPENERS[hit.idx];
+  const recent=new Set(hist.slice(-Math.min(OPENERS.length-1,20)).map(h=>h.idx));
+  let seed=0; for(let i=0;i<k.length;i++) seed=(seed*31+k.charCodeAt(i))>>>0;
+  const fresh=OPENERS.map((_,i)=>i).filter(i=>!recent.has(i));
+  const idx=fresh.length?fresh[seed%fresh.length]:seed%OPENERS.length;
+  hist.push({date:k, idx}); while(hist.length>60) hist.shift();
+  try{ localStorage.setItem('mg_opener_hist', JSON.stringify(hist)); }catch{}
+  return OPENERS[idx];
+}
 
 const GEO = { lat:40.7265, lon:-73.9815, tz:'America/New_York', place:'East Village' };
 const WMO = {

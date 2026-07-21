@@ -67,9 +67,10 @@ function resolvedEx(i){
   const cust = LOGS[todayKey].customEx && LOGS[todayKey].customEx[i];
   if(cust){ return Object.assign({}, e, { name:cust.name, sets:cust.sets, reps:cust.reps, load:cust.load, rpe:cust.rpe||'-', g:'', _custom:true, _swapped:false, _nopts:1 }); }
   const opts = optionsFor(e);
-  const idx = (LOGS[todayKey].swaps && LOGS[todayKey].swaps[i]) || 0;
+  const manual = LOGS[todayKey].swaps && LOGS[todayKey].swaps[i] != null;
+  const idx = manual ? LOGS[todayKey].swaps[i] : (LOGS[todayKey].sessionOverride ? 0 : defaultIdx(e, i, todayKey));
   const pick = opts[Math.min(idx, opts.length-1)] || {name:e.name, load:e.load};
-  return Object.assign({}, e, { name:pick.name, load:pick.load, _swapped: idx>0, _nopts: opts.length });
+  return Object.assign({}, e, { name:pick.name, load:pick.load, _swapped: manual && idx>0, _nopts: opts.length });
 }
 function save(){ store.set('mg_logs', LOGS); store.set('mg_weights', WEIGHTS); store.set('mg_prs', PRS); if(window.MGSync) window.MGSync.onLocalChange(); }
 
@@ -97,13 +98,13 @@ function avg7(){
 }
 
 /* ---------- theme (light / dark) ---------- */
-function applyThemeIcon(){ const b=document.getElementById('themeToggle'); if(b) b.textContent = document.documentElement.getAttribute('data-theme')==='light' ? '☀️' : '🌙'; }
+function applyThemeIcon(){ const b=document.getElementById('themeToggle'); if(b) b.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '🌙' : '☀️'; }
 function toggleTheme(){
-  const light = document.documentElement.getAttribute('data-theme')==='light';
-  if(light) document.documentElement.removeAttribute('data-theme');
-  else document.documentElement.setAttribute('data-theme','light');
-  try{ localStorage.setItem('mg_theme', light ? 'dark' : 'light'); }catch{}
-  const m=document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content', light ? '#0a0d14' : '#eef2f9');
+  const dark = document.documentElement.getAttribute('data-theme')==='dark';
+  if(dark) document.documentElement.removeAttribute('data-theme');
+  else document.documentElement.setAttribute('data-theme','dark');
+  try{ localStorage.setItem('mg_theme', dark ? 'light' : 'dark'); }catch{}
+  const m=document.querySelector('meta[name=theme-color]'); if(m) m.setAttribute('content', dark ? '#efeae0' : '#121d33');
   applyThemeIcon();
 }
 
@@ -152,18 +153,18 @@ function viewToday(){
     </div>`;
   }).join('');
   const pct = totT ? Math.round(100*totD/totT) : 0;
-  const st=streak(), wd=weekDone(), ovC = pct>=100?'#28d98a':'#4f83ff';
+  const st=streak(), wd=weekDone(), ovC = pct>=100?'var(--ok)':'var(--blue)';
   const ov = `
     <div class="card ov">
       <div class="ov-title">Overview</div>
       <div class="ov-rings">
-        <div class="ov-ring ov-sm" style="--p:${Math.min(st,7)/7*100}; --c:#f59e0b">
+        <div class="ov-ring ov-sm" style="--p:${Math.min(st,7)/7*100}; --c:var(--tan)">
           <div class="ov-ctr"><b>${st}</b><small>🔥 STREAK</small></div>
         </div>
         <div class="ov-ring ov-big" style="--p:${pct}; --c:${ovC}">
           <div class="ov-ctr"><b>${pct}<i>%</i></b><small>TODAY</small></div>
         </div>
-        <div class="ov-ring ov-sm" style="--p:${wd/7*100}; --c:#28d98a">
+        <div class="ov-ring ov-sm" style="--p:${wd/7*100}; --c:var(--ok)">
           <div class="ov-ctr"><b>${wd}<i>/7</i></b><small>THIS WK</small></div>
         </div>
       </div>
@@ -183,7 +184,11 @@ function viewToday(){
       <div class="wk-head">
         <div style="flex:1; min-width:0">
           <div class="wk-title" id="wkTitle" title="Tap to rename">${esc(workoutName())} <span class="wk-rename">✏️</span></div>
-          ${(LOGS[todayKey]&&(LOGS[todayKey].sessionOverride||LOGS[todayKey].customName))?`<div class="wk-sub">${LOGS[todayKey].sessionOverride?'<span class="wk-swapped">'+(LOGS[todayKey].sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>':''}${LOGS[todayKey].customName?'<span class="wk-swapped">renamed</span>':''}</div>`:''}
+          ${(()=>{ const l=LOGS[todayKey]||{}; const tags=[];
+            if(l.sessionOverride) tags.push('<span class="wk-swapped">'+(l.sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>');
+            if(l.customName) tags.push('<span class="wk-swapped">renamed</span>');
+            if(!l.sessionOverride) tags.push('<span class="wk-swapped">Week '+weekMixLetter(todayKey)+' mix</span>');
+            return tags.length?'<div class="wk-sub">'+tags.join('')+'</div>':''; })()}
         </div>
         <span class="wk-count">${totD}/${totT} sets</span>
       </div>
@@ -204,8 +209,7 @@ function viewToday(){
         <button id="wSave">Log</button>
       </div>
       <div class="hint">${wLine}</div>
-    </div>
-    ${marketsCard()}`;
+    </div>`;
 }
 
 function wireToday(){
@@ -219,7 +223,7 @@ function wireToday(){
   document.querySelectorAll('[data-swap]').forEach(b=> b.onclick=()=>{
     const i=+b.dataset.swap; const opts=optionsFor(session.ex[i]);
     if(opts.length<2) return toast('No alternatives for this one');
-    const cur=log.swaps[i]||0; let next=cur; let guard=0;
+    const cur=log.swaps[i]!=null ? log.swaps[i] : (log.sessionOverride ? 0 : defaultIdx(session.ex[i], i, todayKey)); let next=cur; let guard=0;
     while(next===cur && guard++<20) next=Math.floor(Math.random()*opts.length);
     log.swaps[i]=next; save(); render(); toast('🔀 '+opts[next].name);
   });
@@ -240,8 +244,6 @@ function wireToday(){
   };
   const de = $('#dbEdit') || $('#dbAdd'); if(de) de.onclick = openDebrief;
   const cw = $('#changeWk'); if(cw) cw.onclick = openWorkoutPicker;
-  const mkGo=$('#mkGo'); if(mkGo){ mkGo.onclick=lookupTicker; const ti=$('#mkTicker'); if(ti) ti.onkeydown=e=>{ if(e.key==='Enter') lookupTicker(); }; }
-  loadMarkets();
   $('#wSave').onclick = ()=>{
     const v=parseFloat($('#wInput').value); if(!v||v<80||v>400) return toast('Enter a valid weight');
     WEIGHTS=WEIGHTS.filter(x=>x.date!==todayKey); WEIGHTS.push({date:todayKey,w:v});
@@ -472,53 +474,6 @@ function applyAIWorkout(w){
   toast('🤖 Custom workout ready');
 }
 
-/* ---------- markets (Finnhub if key present, else Google Finance links) ---------- */
-const hasFin = () => (typeof FINNHUB_KEY!=='undefined' && FINNHUB_KEY);
-const FIN = sym => `https://finnhub.io/api/v1/quote?symbol=${encodeURIComponent(sym)}&token=${FINNHUB_KEY}`;
-const gfLink = sym => `https://www.google.com/search?q=${encodeURIComponent(sym+' stock')}`;
-function marketsCard(){
-  return `<div class="card" id="marketsCard">
-    <div class="section-title mk-title"><span>📈 Markets</span>
-      <a href="https://www.google.com/finance/markets/indexes" target="_blank" rel="noopener" class="mk-gf">Google Finance ↗</a></div>
-    <div id="mkIndices"><span class="hint">Loading markets…</span></div>
-    <div class="qlog" style="margin-top:10px">
-      <input id="mkTicker" placeholder="Look up a ticker (e.g. AAPL)" style="text-transform:uppercase" />
-      <button id="mkGo">Quote</button>
-    </div>
-    <div id="mkResult" class="hint"></div>
-  </div>`;
-}
-function quoteRow(label, q, sym){
-  const up=q.dp>=0, cls=up?'up':'down', arrow=up?'▲':'▼';
-  const link = sym?` <a class="mk-ext" href="${gfLink(sym)}" target="_blank" rel="noopener">↗</a>`:'';
-  return `<div class="mk-row"><span class="mk-name">${label}${link}</span>
-    <span class="mk-price">$${q.c.toFixed(2)}</span>
-    <span class="mk-chg ${cls}">${arrow} ${Math.abs(q.dp).toFixed(2)}%</span></div>`;
-}
-async function loadMarkets(){
-  const el=$('#mkIndices'); if(!el) return;
-  if(!hasFin()){ el.innerHTML=`<div class="hint">📊 <a href="https://www.google.com/finance/markets/indexes" target="_blank" rel="noopener">S&amp;P · Nasdaq · Dow on Google Finance ↗</a><br>Add a free <b>Finnhub</b> key in <code>config.js</code> to see live prices right here.</div>`; return; }
-  try{
-    const idx=[['S&P 500','SPY'],['Nasdaq','QQQ'],['Dow','DIA']];
-    const qs=await Promise.all(idx.map(([_,s])=>fetch(FIN(s)).then(r=>r.json())));
-    el.innerHTML=idx.map(([label,s],i)=> qs[i]&&qs[i].c ? quoteRow(label,qs[i],s) : '').join('')
-      + `<div class="hint" style="margin-top:6px">Index proxies (SPY/QQQ/DIA) · % change tracks the market.</div>`;
-  }catch{ el.innerHTML='<span class="hint">Markets unavailable right now.</span>'; }
-}
-async function lookupTicker(){
-  const inp=$('#mkTicker'), res=$('#mkResult'); if(!inp) return;
-  const sym=inp.value.trim().toUpperCase(); if(!sym) return;
-  if(!hasFin()){ window.open(gfLink(sym),'_blank'); return; }
-  res.textContent='Fetching '+sym+'…';
-  try{ const q=await fetch(FIN(sym)).then(r=>r.json());
-    if(!q || !q.c){ res.textContent='No data for '+sym+' — check the symbol.'; return; }
-    const up=q.dp>=0;
-    res.innerHTML=`<div class="mk-row"><span class="mk-name">${sym} <a class="mk-ext" href="${gfLink(sym)}" target="_blank" rel="noopener">↗</a></span>
-      <span class="mk-price">$${q.c.toFixed(2)}</span>
-      <span class="mk-chg ${up?'up':'down'}">${up?'▲':'▼'} ${Math.abs(q.d).toFixed(2)} (${Math.abs(q.dp).toFixed(2)}%)</span></div>`;
-  }catch{ res.textContent='Lookup failed — try again.'; }
-}
-
 /* ---------- weather (Open-Meteo, no key) ---------- */
 // Resolve device location (with permission); fall back to last-known, then East Village
 function getLocation(){
@@ -629,12 +584,13 @@ function drawChart(){
   const min=Math.min(...vals)-1, max=Math.max(...vals)+1;
   const x=i=>pad+(W-2*pad)*(data.length<=1?0.5:i/(data.length-1));
   const y=v=>H-pad-(H-2*pad)*((v-min)/(max-min||1));
-  ctx.strokeStyle='#c7d2fe'; ctx.setLineDash([5,5]); ctx.beginPath(); ctx.moveTo(pad,y(158)); ctx.lineTo(W-pad,y(158)); ctx.stroke(); ctx.setLineDash([]);
-  ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.fillText('158', W-pad-22, y(158)-4);
-  if(!data.length){ ctx.fillStyle='#94a3b8'; ctx.fillText('Log a weight to start the chart', pad, H/2); return; }
-  ctx.strokeStyle='#2563eb'; ctx.lineWidth=2.5; ctx.beginPath();
+  const css=getComputedStyle(document.documentElement), cv=(n,f)=>(css.getPropertyValue(n)||f).trim();
+  ctx.strokeStyle=cv('--chart-grid','#c2ac8a'); ctx.setLineDash([5,5]); ctx.beginPath(); ctx.moveTo(pad,y(158)); ctx.lineTo(W-pad,y(158)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle=cv('--muted','#97907c'); ctx.font='11px sans-serif'; ctx.fillText('158', W-pad-22, y(158)-4);
+  if(!data.length){ ctx.fillStyle=cv('--muted','#97907c'); ctx.fillText('Log a weight to start the chart', pad, H/2); return; }
+  ctx.strokeStyle=cv('--blue2','#3b82f6'); ctx.lineWidth=2.5; ctx.beginPath();
   data.forEach((d,i)=>{ i?ctx.lineTo(x(i),y(d.w)):ctx.moveTo(x(i),y(d.w)); }); ctx.stroke();
-  ctx.fillStyle='#1e3a8a'; data.forEach((d,i)=>{ ctx.beginPath(); ctx.arc(x(i),y(d.w),3.5,0,7); ctx.fill(); });
+  ctx.fillStyle=cv('--chart-dot','#21365b'); data.forEach((d,i)=>{ ctx.beginPath(); ctx.arc(x(i),y(d.w),3.5,0,7); ctx.fill(); });
 }
 function drawCalendar(){
   const cal=$('#cal'); if(!cal) return; const dows=['S','M','T','W','T','F','S'];
@@ -661,7 +617,7 @@ function openDaySheet(k){
   const dstr = dObj.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
   const w = (WEIGHTS.find(x=>x.date===k)||{}).w;
   const rows = sess.ex.map((e,i)=>{
-    const opts=optionsFor(e); const idx=(log.swaps&&log.swaps[i])||0; const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
+    const opts=optionsFor(e); const idx=(log.swaps&&log.swaps[i]!=null)?log.swaps[i]:(log.sessionOverride?0:defaultIdx(e,i,k)); const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
     const tg=target(e), done=Math.min((log.sets&&log.sets[i])||0,tg);
     return `<div class="ds-row"><span>${pick.name}</span><span class="ds-sets ${done>=tg&&done>0?'full':''}">${done}/${tg}</span></div>`;
   }).join('');
