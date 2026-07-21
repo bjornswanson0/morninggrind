@@ -1,5 +1,5 @@
 /* Morning Grind service worker — offline app shell */
-const CACHE = 'morning-grind-v24';
+const CACHE = 'morning-grind-v25';
 const ASSETS = [
   './', './index.html',
   './css/styles.css',

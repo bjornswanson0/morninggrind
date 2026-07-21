@@ -193,12 +193,12 @@ function viewToday(){
         <span class="wk-count">${totD}/${totT} sets</span>
       </div>
       ${session.aiNote?`<div class="ai-note">${icon('sparkles',15)} <b>Coach:</b> ${session.aiNote}</div>`:''}
-      <div class="cbum">${icon('trophy',15)} <b>Inspired by Chris Bumstead</b> — “CBum,” the 6× Classic Physique Mr. Olympia (2019–2024) and the most decorated champion the division has ever had. Every session borrows his golden-era approach: controlled tempo, full-range reps, and balanced, aesthetic development over ego lifting.</div>
       <button class="wk-change" id="changeWk">${icon('refresh',16)} Change today’s workout</button>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       ${rows}
       <button class="wk-add" id="addEx">${icon('plus',15)} Add an exercise</button>
       ${removedList.length?`<div class="removed-note">${icon('trash',14)} Removed: ${removedList.map(r=>`<button data-restore="${r.i}">${esc(r.name)} ${icon('undo',13)}</button>`).join('')}</div>`:''}
+      <div class="cbum">${icon('trophy',12)} In the spirit of <b>Chris Bumstead</b> — controlled tempo, full range, no ego lifting.</div>
     </div>
     <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?icon('checkCircle',16)+' Completed · shared to your feed':'Finish & post to feed'}</button>
     ${log.done?debriefCardHTML(log):''}
