@@ -1,9 +1,9 @@
 /* Morning Grind service worker — offline app shell */
-const CACHE = 'morning-grind-v23';
+const CACHE = 'morning-grind-v24';
 const ASSETS = [
   './', './index.html',
   './css/styles.css',
-  './js/data.js', './js/app.js',
+  './js/data.js', './js/icons.js', './js/app.js',
   './manifest.webmanifest', './icons/icon.svg'
 ];
 self.addEventListener('install', e => {

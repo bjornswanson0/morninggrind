@@ -162,18 +162,18 @@ SESSIONS.mobility = { title:'Mobility & Recovery', tag:'mobility', outdoor:false
 
 // What shows in the "Change today's workout" picker
 const SESSION_PICKER = [
-  {key:'push', emoji:'💪', label:'Upper Push'},
-  {key:'pull', emoji:'🎯', label:'Upper Pull'},
-  {key:'legs', emoji:'🦵', label:'Lower / Legs'},
-  {key:'pump', emoji:'🔥', label:'Arms & Delts'},
-  {key:'power', emoji:'⚡', label:'Athletic / Power'},
-  {key:'kettlebell', emoji:'🔔', label:'Kettlebell'},
-  {key:'fullbody', emoji:'🏋️', label:'Full Body'},
-  {key:'conditioning', emoji:'🏞️', label:'Long Conditioning'},
-  {key:'cardio', emoji:'❤️', label:'Cardio Session'},
-  {key:'core', emoji:'🧱', label:'Core & Abs'},
-  {key:'bodyweight', emoji:'✈️', label:'Bodyweight / Travel'},
-  {key:'mobility', emoji:'🧘', label:'Mobility & Recovery'},
+  {key:'push', icon:'dumbbell', label:'Upper Push'},
+  {key:'pull', icon:'pull', label:'Upper Pull'},
+  {key:'legs', icon:'legs', label:'Lower / Legs'},
+  {key:'pump', icon:'zap', label:'Arms & Delts'},
+  {key:'power', icon:'activity', label:'Athletic / Power'},
+  {key:'kettlebell', icon:'kettlebell', label:'Kettlebell'},
+  {key:'fullbody', icon:'person', label:'Full Body'},
+  {key:'conditioning', icon:'mountain', label:'Long Conditioning'},
+  {key:'cardio', icon:'heart', label:'Cardio Session'},
+  {key:'core', icon:'hexagon', label:'Core & Abs'},
+  {key:'bodyweight', icon:'plane', label:'Bodyweight / Travel'},
+  {key:'mobility', icon:'wind', label:'Mobility & Recovery'},
 ];
 
 // Rotating opener: verse/quote + grounding reflection + matching song

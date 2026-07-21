@@ -98,7 +98,7 @@ function avg7(){
 }
 
 /* ---------- theme (light / dark) ---------- */
-function applyThemeIcon(){ const b=document.getElementById('themeToggle'); if(b) b.textContent = document.documentElement.getAttribute('data-theme')==='dark' ? '🌙' : '☀️'; }
+function applyThemeIcon(){ const b=document.getElementById('themeToggle'); if(b) b.innerHTML = icon(document.documentElement.getAttribute('data-theme')==='dark' ? 'moon' : 'sun', 18); }
 function toggleTheme(){
   const dark = document.documentElement.getAttribute('data-theme')==='dark';
   if(dark) document.documentElement.removeAttribute('data-theme');
@@ -116,7 +116,7 @@ function render(){
   const _nm=_raw?_raw.trim().split(/\s+/)[0].replace(/^\w/,c=>c.toUpperCase()):'';
   $('#hdrDate').textContent = 'MORNING GRIND';
   $('#hdrTitle').textContent = TAB==='today' ? (_g+(_nm?(', '+_nm):'')) : (TAB==='progress' ? 'Progress' : 'Friends');
-  $('#hdrStreak').textContent = '🔥 ' + streak();
+  $('#hdrStreak').innerHTML = icon('flame',15) + ' ' + streak();
   applyThemeIcon();
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active', t.dataset.tab===TAB));
   $('#view').innerHTML = TAB==='today' ? viewToday() : TAB==='progress' ? viewProgress() : viewFeed();
@@ -138,16 +138,16 @@ function viewToday(){
     <div class="ex ${done>=tg?'ex-done':''}">
       <div class="ex-main">
         <div class="ex-name">${e.name}${e._added?' <span class="swapped">added</span>':(e._custom?' <span class="swapped">custom</span>':(e._swapped?' <span class="swapped">swapped</span>':''))}</div>
-        <div class="ex-meta">${scheme}${e.rpe && e.rpe!=='-' ? ' · RPE '+e.rpe : ''} · <a class="demo" href="${demoURL(e.name)}" target="_blank" rel="noopener">▶ how-to</a></div>
+        <div class="ex-meta">${scheme}${e.rpe && e.rpe!=='-' ? ' · RPE '+e.rpe : ''} · <a class="demo" href="${demoURL(e.name)}" target="_blank" rel="noopener">${icon('play',12)} how-to</a></div>
         <div class="dots">${dots}</div>
       </div>
       <div class="ex-right">
         <div class="ex-load-wrap"><span class="ex-load-cap">LOAD</span><span class="ex-load">${fmtLoad(e.load)}</span></div>
         <div class="ex-btns">
-          ${e._nopts>1?`<button class="ex-swap" data-swap="${i}" title="Swap for a similar exercise">🔀</button>`:''}
-          <button class="ex-edit" data-edit="${i}" title="Customize this exercise">✏️</button>
-          <button class="ex-del" data-remove="${i}" title="Remove this exercise">🗑️</button>
-          <button class="ex-timer" data-timer title="Rest timer">⏱️</button>
+          ${e._nopts>1?`<button class="ex-swap" data-swap="${i}" title="Swap for a similar exercise">${icon('shuffle',16)}</button>`:''}
+          <button class="ex-edit" data-edit="${i}" title="Customize this exercise">${icon('pencil',16)}</button>
+          <button class="ex-del" data-remove="${i}" title="Remove this exercise">${icon('trash',16)}</button>
+          <button class="ex-timer" data-timer title="Rest timer">${icon('timer',17)}</button>
         </div>
       </div>
     </div>`;
@@ -159,7 +159,7 @@ function viewToday(){
       <div class="ov-title">Overview</div>
       <div class="ov-rings">
         <div class="ov-ring ov-sm" style="--p:${Math.min(st,7)/7*100}; --c:var(--tan)">
-          <div class="ov-ctr"><b>${st}</b><small>🔥 STREAK</small></div>
+          <div class="ov-ctr"><b>${st}</b><small>STREAK</small></div>
         </div>
         <div class="ov-ring ov-big" style="--p:${pct}; --c:${ovC}">
           <div class="ov-ctr"><b>${pct}<i>%</i></b><small>TODAY</small></div>
@@ -170,40 +170,40 @@ function viewToday(){
       </div>
     </div>`;
   const w=latestWeight(), a=avg7();
-  const wLine = w!=null ? `⚖️ ${w} lb${a!=null?` · 7-day avg ${a.toFixed(1)}`:''} · target 158`
+  const wLine = w!=null ? `${icon('scale',13)} ${w} lb${a!=null?` · 7-day avg ${a.toFixed(1)}`:''} · target 158`
                         : 'No weight logged yet — add tonight’s below to start your chart.';
   return `
     ${ov}
     <div class="card">
       <div class="verse">${o.verse}<span class="ref">— ${o.ref}</span></div>
-      <div class="why">💭 <b>Why this matters:</b> ${o.why}</div>
+      <div class="why">${icon('bulb',15)} <b>Why this matters:</b> ${o.why}</div>
       <div class="song">${SPOTIFY_ICON} <b>Song of the day:</b> <a href="${spotifySearch(o)}" target="_blank" rel="noopener">${o.song} — ${o.artist}</a></div>
     </div>
     <div class="card weather-card" id="weatherCard"><span class="hint">Loading weather…</span></div>
     <div class="card">
       <div class="wk-head">
         <div style="flex:1; min-width:0">
-          <div class="wk-title" id="wkTitle" title="Tap to rename">${esc(workoutName())} <span class="wk-rename">✏️</span></div>
+          <div class="wk-title" id="wkTitle" title="Tap to rename">${esc(workoutName())} <span class="wk-rename">${icon('pencil',13)}</span></div>
           ${(()=>{ const l=LOGS[todayKey]||{}; const tags=[];
-            if(l.sessionOverride) tags.push('<span class="wk-swapped">'+(l.sessionOverride==='__ai__'?'🤖 AI':'changed')+'</span>');
+            if(l.sessionOverride) tags.push('<span class="wk-swapped">'+(l.sessionOverride==='__ai__'?'AI':'changed')+'</span>');
             if(l.customName) tags.push('<span class="wk-swapped">renamed</span>');
             if(!l.sessionOverride) tags.push('<span class="wk-swapped">Week '+weekMixLetter(todayKey)+' mix</span>');
             return tags.length?'<div class="wk-sub">'+tags.join('')+'</div>':''; })()}
         </div>
         <span class="wk-count">${totD}/${totT} sets</span>
       </div>
-      ${session.aiNote?`<div class="ai-note">🤖 <b>Coach:</b> ${session.aiNote}</div>`:''}
-      <div class="cbum">🏆 <b>Inspired by Chris Bumstead</b> — “CBum,” the 6× Classic Physique Mr. Olympia (2019–2024) and the most decorated champion the division has ever had. Every session borrows his golden-era approach: controlled tempo, full-range reps, and balanced, aesthetic development over ego lifting.</div>
-      <button class="wk-change" id="changeWk">🔄 Change today’s workout</button>
+      ${session.aiNote?`<div class="ai-note">${icon('sparkles',15)} <b>Coach:</b> ${session.aiNote}</div>`:''}
+      <div class="cbum">${icon('trophy',15)} <b>Inspired by Chris Bumstead</b> — “CBum,” the 6× Classic Physique Mr. Olympia (2019–2024) and the most decorated champion the division has ever had. Every session borrows his golden-era approach: controlled tempo, full-range reps, and balanced, aesthetic development over ego lifting.</div>
+      <button class="wk-change" id="changeWk">${icon('refresh',16)} Change today’s workout</button>
       <div class="progress-wrap"><div class="progress-bar" style="width:${pct}%"></div></div>
       ${rows}
-      <button class="wk-add" id="addEx">＋ Add an exercise</button>
-      ${removedList.length?`<div class="removed-note">🗑️ Removed: ${removedList.map(r=>`<button data-restore="${r.i}">${esc(r.name)} ↩︎</button>`).join('')}</div>`:''}
+      <button class="wk-add" id="addEx">${icon('plus',15)} Add an exercise</button>
+      ${removedList.length?`<div class="removed-note">${icon('trash',14)} Removed: ${removedList.map(r=>`<button data-restore="${r.i}">${esc(r.name)} ${icon('undo',13)}</button>`).join('')}</div>`:''}
     </div>
-    <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?'✅ Completed · shared to your feed':'Finish & post to feed'}</button>
+    <button class="btn btn-primary ${log.done?'done':''}" id="completeBtn">${log.done?icon('checkCircle',16)+' Completed · shared to your feed':'Finish & post to feed'}</button>
     ${log.done?debriefCardHTML(log):''}
     <div class="card" style="margin-top:14px">
-      <div class="section-title">⚖️ Tonight’s Weight</div>
+      <div class="section-title">${icon('scale')} Tonight’s Weight</div>
       <div class="qlog">
         <input id="wInput" type="number" inputmode="decimal" step="0.1" placeholder="e.g. 158.4" />
         <button id="wSave">Log</button>
@@ -225,7 +225,7 @@ function wireToday(){
     if(opts.length<2) return toast('No alternatives for this one');
     const cur=log.swaps[i]!=null ? log.swaps[i] : (log.sessionOverride ? 0 : defaultIdx(session.ex[i], i, todayKey)); let next=cur; let guard=0;
     while(next===cur && guard++<20) next=Math.floor(Math.random()*opts.length);
-    log.swaps[i]=next; save(); render(); toast('🔀 '+opts[next].name);
+    log.swaps[i]=next; save(); render(); toast('Swapped to '+opts[next].name);
   });
   document.querySelectorAll('[data-timer]').forEach(b=> b.onclick=()=>startRest(90));
   document.querySelectorAll('[data-edit]').forEach(b=> b.onclick=()=>openExEdit(+b.dataset.edit));
@@ -233,11 +233,11 @@ function wireToday(){
     const i=+b.dataset.remove, baseLen=session.ex.length;
     if(i>=baseLen){ if(log.addedEx) log.addedEx.splice(i-baseLen,1); if(log.sets) log.sets.splice(i,1); }
     else { if(!log.removedEx) log.removedEx={}; log.removedEx[i]=1; }
-    save(); render(); toast('🗑️ Removed'); });
+    save(); render(); toast('Removed'); });
   { const ae=$('#addEx'); if(ae) ae.onclick=openExAdd; }
   { const wt=$('#wkTitle'); if(wt) wt.onclick=openRename; }
   document.querySelectorAll('[data-restore]').forEach(b=> b.onclick=()=>{ const i=+b.dataset.restore;
-    if(log.removedEx) delete log.removedEx[i]; save(); render(); toast('↩︎ Restored'); });
+    if(log.removedEx) delete log.removedEx[i]; save(); render(); toast('Restored'); });
   $('#completeBtn').onclick = ()=>{
     if(!log.done){ log.done=true; log.sets = effList().map((e,k)=> isRemoved(k) ? (log.sets[k]||0) : target(resolvedEx(k))); save(); render(); openDebrief(); }
     else { log.done=false; save(); render(); toast('Marked incomplete'); }
@@ -247,26 +247,25 @@ function wireToday(){
   $('#wSave').onclick = ()=>{
     const v=parseFloat($('#wInput').value); if(!v||v<80||v>400) return toast('Enter a valid weight');
     WEIGHTS=WEIGHTS.filter(x=>x.date!==todayKey); WEIGHTS.push({date:todayKey,w:v});
-    WEIGHTS.sort((a,b)=>a.date.localeCompare(b.date)); save(); toast('Weight logged 📈'); render();
+    WEIGHTS.sort((a,b)=>a.date.localeCompare(b.date)); save(); toast('Weight logged'); render();
   };
 }
 
 /* ---------- post-workout debrief ---------- */
-const FEELS = [['😣','Grind',1],['😮‍💨','Tough',2],['🙂','Solid',3],['💪','Strong',4],['🔥','On fire',5]];
-const FEEL_LABEL = {1:'😣 Grind',2:'😮‍💨 Tough',3:'🙂 Solid',4:'💪 Strong',5:'🔥 On fire'};
+const FEELS = [[1,'Grind'],[2,'Tough'],[3,'Solid'],[4,'Strong'],[5,'On fire']];
 
 function debriefCardHTML(log){
   const d = log.debrief;
   if(d){
-    const bits = [d.rating?FEEL_LABEL[d.rating]:'', d.effort, d.energy?d.energy+' energy':''].filter(Boolean).join(' · ');
-    return `<div class="card"><div class="section-title">📝 Session Debrief</div>
+    const bits = [d.rating?feelLabel(d.rating):'', d.effort, d.energy?d.energy+' energy':''].filter(Boolean).join(' · ');
+    return `<div class="card"><div class="section-title">${icon('clipboard')} Session Debrief</div>
       <div class="db-sum">${bits||'Logged'}</div>
       ${d.notes?`<div class="db-notes">“${d.notes}”</div>`:''}
       <button class="btn btn-ghost" id="dbEdit">Edit debrief</button></div>`;
   }
-  return `<div class="card"><div class="section-title">📝 Session Debrief</div>
+  return `<div class="card"><div class="section-title">${icon('clipboard')} Session Debrief</div>
     <div class="hint">How did it go? Log a quick debrief.</div>
-    <button class="btn btn-ghost" id="dbAdd">＋ Add debrief</button></div>`;
+    <button class="btn btn-ghost" id="dbAdd">${icon('plus',15)} Add debrief</button></div>`;
 }
 
 function openDebrief(k){
@@ -277,9 +276,9 @@ function openDebrief(k){
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
   wrap.innerHTML=`<div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Nice work — quick debrief 💪</div>
+    <div class="sheet-title">Nice work — quick debrief</div>
     <div class="sheet-label">How’d it feel?</div>
-    <div class="feels">${FEELS.map(f=>`<button class="feel ${d.rating===f[2]?'sel':''}" data-rating="${f[2]}"><span>${f[0]}</span><small>${f[1]}</small></button>`).join('')}</div>
+    <div class="feels">${FEELS.map(f=>`<button class="feel ${d.rating===f[0]?'sel':''}" data-rating="${f[0]}">${feelMeter(f[0])}<small>${f[1]}</small></button>`).join('')}</div>
     <div class="sheet-label">Effort</div>
     <div class="chips">${['Easy','Just right','Brutal'].map(v=>chip('effort',v,d.effort)).join('')}</div>
     <div class="sheet-label">Energy</div>
@@ -296,7 +295,7 @@ function openDebrief(k){
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
   wrap.querySelector('#dbSkip').onclick=close;
   wrap.onclick=(e)=>{ if(e.target===wrap) close(); };
-  wrap.querySelector('#dbSave').onclick=()=>{ d.notes=wrap.querySelector('#dbNotes').value.trim(); d.at=k; log.debrief=d; save(); close(); render(); toast('Debrief saved 📝'); };
+  wrap.querySelector('#dbSave').onclick=()=>{ d.notes=wrap.querySelector('#dbNotes').value.trim(); d.at=k; log.debrief=d; save(); close(); render(); toast('Debrief saved'); };
 }
 
 /* ---------- customize a single exercise ---------- */
@@ -304,7 +303,7 @@ function openExEdit(i){
   const e=resolvedEx(i);
   const baseLen = session.ex.length, isAdded = i >= baseLen;
   const showRemove = isAdded || e._custom || e._swapped;
-  const removeLabel = isAdded ? '🗑️ Remove exercise' : '↩︎ Reset to planned';
+  const removeLabel = isAdded ? (icon('trash',15)+' Remove exercise') : (icon('undo',15)+' Reset to planned');
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
   wrap.innerHTML=`<div class="sheet"><div class="sheet-handle"></div>
     <div class="sheet-title">${isAdded?'Edit exercise':'Customize exercise'}</div>
@@ -319,7 +318,7 @@ function openExEdit(i){
       <div><div class="sheet-label">RPE</div><input id="exRpe" value="${esc(String(e.rpe||'-'))}" placeholder="9 or -" /></div>
     </div>
     <button class="btn btn-primary" id="exSave" style="margin-top:16px">Save exercise</button>
-    ${(!isAdded && (e._custom||e._swapped))?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">↩︎ Reset to planned</button>`:''}
+    ${(!isAdded && (e._custom||e._swapped))?`<button class="btn btn-ghost" id="exReset" style="margin-top:8px">${icon('undo',15)} Reset to planned</button>`:''}
     <button class="sheet-skip" id="exCancel">Cancel</button></div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
@@ -331,10 +330,10 @@ function openExEdit(i){
     const log=ensureLog(todayKey);
     if(isAdded){ if(!log.addedEx) log.addedEx=[]; log.addedEx[i-baseLen]=vals; }
     else { if(!log.customEx) log.customEx={}; log.customEx[i]=vals; if(log.swaps) delete log.swaps[i]; }
-    save(); render(); close(); toast('✏️ '+name); };
+    save(); render(); close(); toast('Updated · '+name); };
   const rs=q('#exReset'); if(rs) rs.onclick=()=>{ const log=ensureLog(todayKey);
     if(log.customEx) delete log.customEx[i]; if(log.swaps) delete log.swaps[i];
-    save(); render(); close(); toast('↩︎ Reset to planned'); };
+    save(); render(); close(); toast('Reset to planned'); };
 }
 
 function openExAdd(){
@@ -373,7 +372,7 @@ function openRename(){
     <div class="hint" style="margin-bottom:2px">Give today a name — e.g. “Arm Day Pump” or “Leg Destroyer.” Leave blank to use the default.</div>
     <input id="rnName" value="${esc(cur)}" placeholder="${esc(session.title)}" />
     <button class="btn btn-primary" id="rnSave" style="margin-top:16px">Save name</button>
-    ${cur?`<button class="btn btn-ghost" id="rnReset" style="margin-top:8px">↩︎ Use default name</button>`:''}
+    ${cur?`<button class="btn btn-ghost" id="rnReset" style="margin-top:8px">${icon('undo',15)} Use default name</button>`:''}
     <button class="sheet-skip" id="rnCancel">Cancel</button></div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
@@ -381,9 +380,9 @@ function openRename(){
   q('#rnCancel').onclick=close; wrap.onclick=ev=>{ if(ev.target===wrap) close(); };
   q('#rnSave').onclick=()=>{ const v=q('#rnName').value.trim(); const log=ensureLog(todayKey);
     if(v && v!==session.title) log.customName=v.slice(0,60); else delete log.customName;
-    save(); render(); close(); toast(log.customName?('✏️ '+log.customName):'↩︎ Default name'); };
+    save(); render(); close(); toast(log.customName?('Renamed · '+log.customName):'Default name'); };
   const rr=q('#rnReset'); if(rr) rr.onclick=()=>{ const log=ensureLog(todayKey); delete log.customName;
-    save(); render(); close(); toast('↩︎ Default name'); };
+    save(); render(); close(); toast('Default name'); };
 }
 
 /* ---------- change today's whole workout ---------- */
@@ -391,15 +390,15 @@ function openWorkoutPicker(){
   const log = ensureLog(todayKey);
   const plannedTag = SPLIT[today.getDay()].tag;
   const curKey = log.sessionOverride || plannedTag;
-  const opt = o => `<button class="pick ${curKey===o.key?'sel':''}" data-key="${o.key}">${o.emoji}<span>${o.label}</span></button>`;
+  const opt = o => `<button class="pick ${curKey===o.key?'sel':''}" data-key="${o.key}">${icon(o.icon,26)}<span>${o.label}</span></button>`;
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
   wrap.innerHTML=`<div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">Choose today’s workout</div>
     <div class="hint" style="margin-bottom:8px">Not feeling the plan? Pick a different session. (Your set progress resets for the new one.)</div>
     <div class="pick-grid">${SESSION_PICKER.map(opt).join('')}</div>
-    <button class="btn btn-ai" id="pkAI" style="margin-top:14px">✨ Describe your own (AI)</button>
-    <button class="btn btn-ghost" id="pkReset" style="margin-top:8px">↩︎ Back to today’s planned workout</button>
+    <button class="btn btn-ai" id="pkAI" style="margin-top:14px">${icon('sparkles',16)} Describe your own (AI)</button>
+    <button class="btn btn-ghost" id="pkReset" style="margin-top:8px">${icon('undo',15)} Back to today’s planned workout</button>
     <button class="sheet-skip" id="pkCancel">Cancel</button>
   </div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
@@ -419,7 +418,7 @@ function chooseSession(key){
   if(effective) log.sessionOverride = effective; else delete log.sessionOverride;
   log.sets=[]; log.swaps={}; log.done=false; // fresh start for the new session
   save(); render();
-  toast(effective ? '🔄 Switched to '+(SESSIONS[effective]?SESSIONS[effective].title:effective) : '↩︎ Back to your plan');
+  toast(effective ? 'Switched to '+(SESSIONS[effective]?SESSIONS[effective].title:effective) : 'Back to your plan');
 }
 
 /* ---------- AI: describe your own workout ---------- */
@@ -427,7 +426,7 @@ function openAICustom(){
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
   wrap.innerHTML=`<div class="sheet">
     <div class="sheet-handle"></div>
-    <div class="sheet-title">Describe your workout ✨</div>
+    <div class="sheet-title">Describe your workout</div>
     <div class="hint" style="margin-bottom:8px">Tell the coach what you want and it’ll program a full session with weights — tuned to your maxes and goals.</div>
     <textarea id="aiPrompt" rows="3" placeholder="e.g. 45-min push day, shoulders are sore so go easy on pressing, finish with a quick treadmill burn"></textarea>
     <div class="ai-examples" id="aiEx">
@@ -436,7 +435,7 @@ function openAICustom(){
       <button data-ex="Light active-recovery day: mobility, core, and an easy pool swim">Recovery day</button>
     </div>
     <div id="aiMsg" class="hint"></div>
-    <button class="btn btn-ai" id="aiGo">✨ Generate my workout</button>
+    <button class="btn btn-ai" id="aiGo">${icon('sparkles',16)} Generate my workout</button>
     <button class="sheet-skip" id="aiCancel">Cancel</button>
   </div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
@@ -449,15 +448,15 @@ function openAICustom(){
     const prompt=ta.value.trim();
     if(!prompt) return msg('Type a few words about the workout you want.');
     if(location.protocol==='file:') return msg('AI workouts run on the live site (morninggrind.netlify.app), not this local file preview.');
-    const btn=wrap.querySelector('#aiGo'); btn.disabled=true; const label=btn.textContent; btn.textContent='Programming your session… 💪';
+    const btn=wrap.querySelector('#aiGo'); btn.disabled=true; const label=btn.innerHTML; btn.textContent='Programming your session…';
     try{
       const maxes = (typeof getMaxes==='function') ? getMaxes() : {};
       const res=await fetch('/.netlify/functions/workout',{ method:'POST', headers:{'content-type':'application/json'},
         body:JSON.stringify({ prompt, maxes }) });
       const data=await res.json().catch(()=>({error:'Unexpected response.'}));
-      if(!res.ok || data.error){ btn.disabled=false; btn.textContent=label; return msg('⚠️ '+(data.error||'Could not generate — try again.')); }
+      if(!res.ok || data.error){ btn.disabled=false; btn.innerHTML=label; return msg(data.error||'Could not generate — try again.'); }
       applyAIWorkout(data); close();
-    }catch(e){ btn.disabled=false; btn.textContent=label; msg('⚠️ Couldn’t reach the coach — check your connection and try again.'); }
+    }catch(e){ btn.disabled=false; btn.innerHTML=label; msg('Couldn’t reach the coach — check your connection and try again.'); }
   };
 }
 function applyAIWorkout(w){
@@ -471,7 +470,7 @@ function applyAIWorkout(w){
   log.sessionOverride='__ai__'; log.customSession=sess;
   log.sets=[]; log.swaps={}; log.done=false;
   save(); render();
-  toast('🤖 Custom workout ready');
+  toast('Custom workout ready');
 }
 
 /* ---------- weather (Open-Meteo, no key) ---------- */
@@ -502,7 +501,7 @@ async function paintWeather(){
       `&temperature_unit=fahrenheit&wind_speed_unit=mph&timezone=auto`;
     const r=await fetch(u); const j=await r.json(); WEATHER={current:j.current, hourly:j.hourly, place:loc.place};
     el.innerHTML=weatherHTML(WEATHER.current, WEATHER.place)+hourlyHTML(WEATHER.hourly);
-  }catch{ el.innerHTML='<span class="hint">🌤️ Weather unavailable offline — reopen with a connection.</span>'; }
+  }catch{ el.innerHTML=`<span class="hint">${icon('cloud',14)} Weather unavailable offline — reopen with a connection.</span>`; }
 }
 function hourlyHTML(h){
   if(!h||!h.time||!h.time.length) return '';
@@ -513,29 +512,28 @@ function hourlyHTML(h){
   for(let i=s;i<Math.min(s+12,h.time.length);i++){
     const hr=+h.time[i].slice(11,13);
     const lbl = i===s ? 'Now' : ((hr%12)||12)+(hr<12?'AM':'PM');
-    const [emo]=WMO[h.weather_code[i]]||['🌡️'];
     const pop=h.precipitation_probability?h.precipitation_probability[i]:0;
-    cells.push(`<div class="hour"><div class="hh">${lbl}</div><div class="he">${emo}</div>`+
+    cells.push(`<div class="hour"><div class="hh">${lbl}</div><div class="he">${wxIcon(h.weather_code[i],21)}</div>`+
       `<div class="ht">${Math.round(h.temperature_2m[i])}°</div>`+
       `${pop>=20?`<div class="hp">${pop}%</div>`:'<div class="hp">&nbsp;</div>'}</div>`);
   }
   return `<div class="hourly">${cells.join('')}</div>`;
 }
 function weatherHTML(c, place){
-  const [emo,desc]=WMO[c.weather_code]||['🌡️','—'];
+  const desc=(WMO[c.weather_code]||[null,'—'])[1];
   const temp=Math.round(c.temperature_2m), feels=Math.round(c.apparent_temperature);
   const wet=c.precipitation>0 || (c.weather_code>=51);
   const cold=temp<=32, hot=temp>=92;
   let rec;
   if(session.outdoor){
     rec = (wet||cold||hot)
-      ? `↪︎ Rough out there — take the run to the <b>treadmill</b> (or hit the <b>pool</b>).`
-      : `✅ Great conditions — do the <b>outdoor run</b>.`;
+      ? `${icon('cloudRain',14)} Rough out there — take the run to the <b>treadmill</b> (or hit the <b>pool</b>).`
+      : `${icon('check',14)} Great conditions — do the <b>outdoor run</b>.`;
   } else {
     rec = wet ? `Grab a layer if you’re commuting to the gym.` : `Clear commute to the gym.`;
   }
-  return `<div class="wx"><span class="wx-emo">${emo}</span>
-      <div><div class="wx-t">${temp}°F <span class="hint">feels ${feels}° · ${desc} · 📍 ${place||GEO.place}</span></div>
+  return `<div class="wx"><span class="wx-emo">${wxIcon(c.weather_code,34)}</span>
+      <div><div class="wx-t">${temp}°F <span class="hint">feels ${feels}° · ${desc} · ${icon('map-pin',12)} ${place||GEO.place}</span></div>
       <div class="wx-rec">${rec}</div></div></div>`;
 }
 
@@ -547,23 +545,23 @@ function viewProgress(){
     || '<div class="hint">No PRs yet — log your bests below.</div>';
   return `
     <div class="stat-row">
-      <div class="stat"><div class="n">${streak()}</div><div class="l">🔥 day streak</div></div>
+      <div class="stat"><div class="n">${streak()}</div><div class="l">day streak</div></div>
       <div class="stat"><div class="n">${monthCount()}</div><div class="l">this month</div></div>
       <div class="stat"><div class="n">${w!=null?w:'—'}</div><div class="l">latest lb</div></div>
     </div>
     <div class="card" style="margin-top:14px">
-      <div class="section-title">⚖️ Weight ${a!=null?`· 7-day avg ${a.toFixed(1)}`:''}</div>
+      <div class="section-title">${icon('scale')} Weight ${a!=null?`· 7-day avg ${a.toFixed(1)}`:''}</div>
       <canvas id="wChart" width="600" height="180"></canvas>
       <div class="hint">Target 158 lb (dashed). Log nightly to fill the trend.</div>
     </div>
     <div class="card">
-      <div class="section-title">📅 Consistency</div>
+      <div class="section-title">${icon('calendar')} Consistency</div>
       <div class="cal-months" id="calMonths"></div>
       <div class="cal" id="cal"></div>
       <div class="hint" style="text-align:center;margin-top:8px">Tap a day to see that workout + debrief</div>
     </div>
     <div class="card">
-      <div class="section-title">🏋️ Personal Records</div>
+      <div class="section-title">${icon('dumbbell')} Personal Records</div>
       ${prRows}
       <div class="qlog" style="margin-top:10px">
         <input id="prLift" placeholder="Lift (e.g. Bench)" />
@@ -576,7 +574,7 @@ function wireProgress(){
   drawChart(); drawCalendar();
   $('#prSave').onclick=()=>{ const lift=$('#prLift').value.trim(), v=parseFloat($('#prW').value);
     if(!lift||!v) return toast('Enter lift + weight');
-    PRS.push({date:todayKey,lift,w:v}); save(); toast('PR logged! 🎉'); render(); };
+    PRS.push({date:todayKey,lift,w:v}); save(); toast('PR logged'); render(); };
 }
 function drawChart(){
   const c=$('#wChart'); if(!c) return; const ctx=c.getContext('2d'); const W=c.width,H=c.height,pad=24;
@@ -622,45 +620,43 @@ function openDaySheet(k){
     return `<div class="ds-row"><span>${pick.name}</span><span class="ds-sets ${done>=tg&&done>0?'full':''}">${done}/${tg}</span></div>`;
   }).join('');
   const d=log.debrief;
-  const feelMap={1:'😣 Grind',2:'😮‍💨 Tough',3:'🙂 Solid',4:'💪 Strong',5:'🔥 On fire'};
-  const debriefHTML = d ? `<div class="sheet-label">📝 Debrief</div>
-      <div class="ds-debrief">${[d.rating?feelMap[d.rating]:'',d.effort,d.energy?d.energy+' energy':''].filter(Boolean).join(' · ')||'Logged'}${d.notes?`<div class="ds-notes">“${d.notes}”</div>`:''}</div>` : '';
-  const badge = log.done ? '<span class="ds-badge done">✅ Completed</span>'
+  const debriefHTML = d ? `<div class="sheet-label">${icon('clipboard')} Debrief</div>
+      <div class="ds-debrief">${[d.rating?feelLabel(d.rating):'',d.effort,d.energy?d.energy+' energy':''].filter(Boolean).join(' · ')||'Logged'}${d.notes?`<div class="ds-notes">“${d.notes}”</div>`:''}</div>` : '';
+  const badge = log.done ? `<span class="ds-badge done">${icon('check',12)} Completed</span>`
     : (log.sets && log.sets.some(x=>x>0)) ? '<span class="ds-badge">Partial</span>'
     : '<span class="ds-badge">Not logged</span>';
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
   wrap.innerHTML=`<div class="sheet">
     <div class="sheet-handle"></div>
     <div class="sheet-title">${dstr}</div>
-    <div class="ds-meta">${sess.title} &nbsp; ${badge}${w!=null?` &nbsp; ⚖️ ${w} lb`:''}</div>
+    <div class="ds-meta">${sess.title} &nbsp; ${badge}${w!=null?` &nbsp; ${icon('scale',13)} ${w} lb`:''}</div>
     <div class="sheet-label">Workout</div>
     ${rows}
     ${debriefHTML}
     <div class="ds-actions">
-      <button class="btn ${log.done?'btn-ghost':'btn-primary'}" id="dsToggle">${log.done?'↩︎ Mark not completed':'✅ Mark completed'}</button>
-      <button class="btn btn-ghost" id="dsDebrief">${log.debrief?'📝 Edit debrief':'📝 Add debrief'}</button>
+      <button class="btn ${log.done?'btn-ghost':'btn-primary'}" id="dsToggle">${log.done?icon('undo',15)+' Mark not completed':icon('check',15)+' Mark completed'}</button>
+      <button class="btn btn-ghost" id="dsDebrief">${log.debrief?icon('pencil',15)+' Edit debrief':icon('plus',15)+' Add debrief'}</button>
     </div>
     <button class="sheet-skip" id="dsClose">Close</button>
   </div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
   const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
   wrap.querySelector('#dsClose').onclick=close; wrap.onclick=e=>{ if(e.target===wrap) close(); };
-  wrap.querySelector('#dsToggle').onclick=()=>{ const l=ensureLog(k); l.done=!l.done; if(l.done) l.sets=sess.ex.map(e=>target(e)); save(); close(); render(); toast(l.done?'Marked complete ✅':'Marked not complete'); };
+  wrap.querySelector('#dsToggle').onclick=()=>{ const l=ensureLog(k); l.done=!l.done; if(l.done) l.sets=sess.ex.map(e=>target(e)); save(); close(); render(); toast(l.done?'Marked complete':'Marked not complete'); };
   wrap.querySelector('#dsDebrief').onclick=()=>{ close(); openDebrief(k); };
 }
 
 /* ---------- Friends / Feed (Strava-style) ---------- */
-const FEEL_MAP = {1:'😣 Grind',2:'😮‍💨 Tough',3:'🙂 Solid',4:'💪 Strong',5:'🔥 On fire'};
 function viewFeed(){
   if(!(window.MGSync && window.MGSync.signedIn && window.MGSync.signedIn())){
-    return `<div class="card"><div class="section-title">👥 Friends</div>
+    return `<div class="card"><div class="section-title">${icon('users')} Friends</div>
       <div class="hint">Sign in to share your training and follow friends — see their lifts and how they felt.</div>
       <button class="btn btn-primary" id="feedSignIn" style="margin-top:12px">Sign in to sync</button></div>`;
   }
   return `
     <div class="seg feed-seg">
-      <button data-fs="feed" class="${FEEDSUB==='feed'?'on':''}">🏋️ Feed</button>
-      <button data-fs="friends" class="${FEEDSUB==='friends'?'on':''}">👥 Friends</button>
+      <button data-fs="feed" class="${FEEDSUB==='feed'?'on':''}">${icon('dumbbell',16)} Feed</button>
+      <button data-fs="friends" class="${FEEDSUB==='friends'?'on':''}">${icon('users',16)} Friends</button>
     </div>
     <div id="feedPane"></div>`;
 }
@@ -679,18 +675,18 @@ function paintFeedPane(){
     el.innerHTML=`
       <div class="card" id="profileCard"><div class="hint">Loading your profile…</div></div>
       <div class="card">
-        <div class="section-title">🔎 On Morning Grind</div>
+        <div class="section-title">${icon('search')} On Morning Grind</div>
         <div class="hint" style="margin:0 0 10px">Tap Follow to add anyone here — no handle needed.</div>
         <div id="discoverRows"><div class="hint">Loading people…</div></div>
       </div>
       <div class="card">
-        <div class="section-title">➕ Add by handle</div>
+        <div class="section-title">${icon('userPlus')} Add by handle</div>
         <div class="qlog"><input id="followHandle" placeholder="their @handle" autocapitalize="off" autocorrect="off" /><button id="followBtn">Follow</button></div>
         <div class="hint" id="followMsg">Know someone’s exact handle? Add them directly here.</div>
       </div>`;
     const fb=$('#followBtn'); if(fb) fb.onclick=async()=>{ const h=$('#followHandle').value; if(!h) return;
       $('#followMsg').textContent='Following…'; const err=await window.MGSync.follow(h);
-      $('#followMsg').textContent = err ? ('⚠️ '+err) : '✅ Followed!';
+      $('#followMsg').textContent = err ? err : 'Followed!';
       if(!err){ $('#followHandle').value=''; loadProfileCard(); loadDiscover(); } };
     loadProfileCard(); loadDiscover();
   } else {
@@ -715,7 +711,7 @@ async function loadDiscover(){
   el.querySelectorAll('.disc-follow:not(.following)').forEach(b=> b.onclick=async()=>{
     b.disabled=true; b.textContent='…';
     const err=await window.MGSync.follow(b.dataset.h);
-    if(err){ b.disabled=false; b.textContent='Follow'; toast('⚠️ '+err); }
+    if(err){ b.disabled=false; b.textContent='Follow'; toast(err); }
     else { b.textContent='Following ✓'; b.classList.add('following'); loadProfileCard(); loadFeed(); } });
 }
 async function loadProfileCard(){
@@ -724,11 +720,11 @@ async function loadProfileCard(){
   el.innerHTML=`<div class="prof">
       ${avatarEl(p,'prof')}
       <div class="prof-main"><div class="prof-name">${esc(p.display_name||'You')}</div>
-        <div class="prof-handle">${p.handle?('@'+esc(p.handle)):'⚠️ set a handle so friends can add you'}</div></div>
+        <div class="prof-handle">${p.handle?('@'+esc(p.handle)):(icon('alert',13)+' set a handle so friends can add you')}</div></div>
       <button class="btn-ghost prof-edit" id="editProfile">Edit</button></div>
-    ${p.goals?`<div class="pf-sec">🎯 <b>Goals</b> · ${esc(p.goals)}</div>`:''}
-    ${p.quote?`<div class="pf-sec">❝ <b>Quote</b> · ${esc(p.quote)}</div>`:''}
-    ${p.movie?`<div class="pf-sec">🎬 <b>Movie</b> · ${esc(p.movie)}</div>`:''}
+    ${p.goals?`<div class="pf-sec">${icon('target',14)} <b>Goals</b> · ${esc(p.goals)}</div>`:''}
+    ${p.quote?`<div class="pf-sec">${icon('quote',14)} <b>Quote</b> · ${esc(p.quote)}</div>`:''}
+    ${p.movie?`<div class="pf-sec">${icon('film',14)} <b>Movie</b> · ${esc(p.movie)}</div>`:''}
     <div class="hint" style="margin-top:12px">Following ${following.length} ${following.length===1?'friend':'friends'}${following.length?': '+following.map(f=>'@'+(f.handle||'?')).join(', '):''}</div>`;
   $('#editProfile').onclick=openProfileEdit;
 }
@@ -741,7 +737,7 @@ async function openProfileEdit(){
     <div class="pf-photo-row">
       <div class="pf-av" id="pfAvPreview">${avatar?`<img src="${avatar}" alt="" />`:esc(p.emoji||'💪')}</div>
       <div style="flex:1; min-width:0">
-        <button class="btn-ghost pf-photo-btn" id="pfPickBtn" type="button">📷 ${avatar?'Change photo':'Add a photo'}</button>
+        <button class="btn-ghost pf-photo-btn" id="pfPickBtn" type="button">${icon('camera',15)} ${avatar?'Change photo':'Add a photo'}</button>
         <button class="pf-photo-clear" id="pfClearBtn" type="button" style="${avatar?'':'display:none'}">Remove photo</button>
       </div>
     </div>
@@ -765,19 +761,19 @@ async function openProfileEdit(){
   q('#pfPickBtn').onclick=()=>fileInput.click();
   fileInput.onchange=()=>{ const f=fileInput.files&&fileInput.files[0]; if(!f) return;
     q('#pfMsg').textContent='Processing photo…';
-    resizeImage(f, 256, (dataUrl)=>{ if(!dataUrl){ q('#pfMsg').textContent='⚠️ Could not read that image.'; return; }
+    resizeImage(f, 256, (dataUrl)=>{ if(!dataUrl){ q('#pfMsg').textContent='Could not read that image.'; return; }
       avatar=dataUrl; q('#pfAvPreview').innerHTML=`<img src="${dataUrl}" alt="" />`;
-      q('#pfClearBtn').style.display=''; q('#pfPickBtn').textContent='📷 Change photo'; q('#pfMsg').textContent=''; }); };
+      q('#pfClearBtn').style.display=''; q('#pfPickBtn').innerHTML=icon('camera',15)+' Change photo'; q('#pfMsg').textContent=''; }); };
   q('#pfClearBtn').onclick=()=>{ avatar=null; q('#pfAvPreview').innerHTML=esc(q('#pfEmoji').value||'💪');
-    q('#pfClearBtn').style.display='none'; q('#pfPickBtn').textContent='📷 Add a photo'; };
+    q('#pfClearBtn').style.display='none'; q('#pfPickBtn').innerHTML=icon('camera',15)+' Add a photo'; };
   q('#pfSave').onclick=async()=>{
     q('#pfMsg').textContent='Saving…';
     const err=await window.MGSync.saveProfile({
       display_name:q('#pfName').value.trim(), handle:q('#pfHandle').value.trim(),
       emoji:q('#pfEmoji').value.trim()||'💪', avatar:avatar,
       goals:q('#pfGoals').value.trim(), quote:q('#pfQuote').value.trim(), movie:q('#pfMovie').value.trim() });
-    if(err){ q('#pfMsg').textContent='⚠️ '+err; }
-    else { close(); loadProfileCard(); if(window.MGSync.reloadProfile) window.MGSync.reloadProfile(); toast('Profile saved ✅'); } };
+    if(err){ q('#pfMsg').textContent=err; }
+    else { close(); loadProfileCard(); if(window.MGSync.reloadProfile) window.MGSync.reloadProfile(); toast('Profile saved'); } };
 }
 function liftsSummary(it){
   const swaps=it.swaps||{}, sets=it.sets||[], cust=(it.plan&&it.plan.ex)||{}, added=(it.plan&&it.plan.added)||[], removed=(it.plan&&it.plan.removed)||{};
@@ -807,8 +803,8 @@ function feedCard(it, prof){
   const exCount=lifts.length || ls.length;
   const shown=lifts.slice(0,8);
   const liftHTML=shown.length?`<div class="fc-lifts">${shown.map(l=>`<span>${l.name} <b>${fmtLoad(l.load)}</b></span>`).join('')}${lifts.length>8?`<span class="fc-more">+${lifts.length-8} more</span>`:''}</div>`:'';
-  const statHTML=`<div class="fc-stats"><span>🏋️ ${exCount} exercises</span><span>✅ ${doneSets}/${totSets} sets</span><span>🔥 ${pct}% complete</span></div>`;
-  const debHTML=d?`<div class="fc-deb">${d.rating?FEEL_MAP[d.rating]:''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${d.notes}”</div>`:''}</div>`:`<div class="fc-nodeb">No debrief logged</div>`;
+  const statHTML=`<div class="fc-stats"><span>${icon('dumbbell')} ${exCount} exercises</span><span>${icon('check')} ${doneSets}/${totSets} sets</span><span>${icon('flame')} ${pct}% complete</span></div>`;
+  const debHTML=d?`<div class="fc-deb">${d.rating?feelLabel(d.rating):''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${d.notes}”</div>`:''}</div>`:`<div class="fc-nodeb">No debrief logged</div>`;
   return `<div class="card fc">
     <div class="fc-head" data-uid="${it.user_id}">${avatarEl(prof,'fc')}
       <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}${(window.MGSync&&window.MGSync.myId&&window.MGSync.myId()===it.user_id)?' <span class="fc-you">You</span>':''}</div>
@@ -820,7 +816,7 @@ async function loadFeed(){
   const el=$('#feedList'); if(!el) return;
   if(window.MGSync && window.MGSync.flush){ try{ await window.MGSync.flush(); }catch{} }
   const { items, profiles }=await window.MGSync.feed();
-  if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No completed workouts yet. Finish today’s session and it’ll show up here — and head to the <b>👥 Friends</b> tab to follow people and see theirs too.</div></div>`; return; }
+  if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No completed workouts yet. Finish today’s session and it’ll show up here — and head to the <b>Friends</b> tab to follow people and see theirs too.</div></div>`; return; }
   el.innerHTML=items.map(it=>feedCard(it, profiles[it.user_id]||{})).join('');
   el.querySelectorAll('.fc-head[data-uid]').forEach(h=>{ h.onclick=()=>openProfile(h.dataset.uid); });
 }
@@ -833,11 +829,11 @@ function profileWorkoutCard(it){
   const pct=totSets?Math.round(100*doneSets/totSets):0;
   const lifts=ls.filter(l=>l.done>0), shown=lifts.slice(0,8);
   const liftHTML=shown.length?`<div class="fc-lifts">${shown.map(l=>`<span>${esc(l.name)} <b>${fmtLoad(l.load)}</b></span>`).join('')}${lifts.length>8?`<span class="fc-more">+${lifts.length-8} more</span>`:''}</div>`:'';
-  const statHTML=`<div class="fc-stats"><span>🏋️ ${lifts.length||ls.length} exercises</span><span>✅ ${doneSets}/${totSets} sets</span><span>🔥 ${pct}%</span></div>`;
-  const debHTML=d?`<div class="fc-deb">${d.rating?FEEL_MAP[d.rating]:''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${esc(d.notes)}”</div>`:''}</div>`:'';
+  const statHTML=`<div class="fc-stats"><span>${icon('dumbbell')} ${lifts.length||ls.length} exercises</span><span>${icon('check')} ${doneSets}/${totSets} sets</span><span>${icon('flame')} ${pct}%</span></div>`;
+  const debHTML=d?`<div class="fc-deb">${d.rating?feelLabel(d.rating):''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${esc(d.notes)}”</div>`:''}</div>`:'';
   return `<div class="card pw">
     <div class="pw-head"><span class="pw-title">${esc(title)}</span><span class="fc-pct">${pct}%</span></div>
-    <div class="pw-when">✅ ${when}</div>
+    <div class="pw-when">${icon('check',13)} ${when}</div>
     ${statHTML}${liftHTML}${debHTML}</div>`;
 }
 async function openProfile(id){
@@ -868,20 +864,20 @@ async function openProfile(id){
       <div class="prof-hero-name">${esc(p.display_name||('@'+(p.handle||'friend')))}</div>
       ${p.handle?`<div class="prof-handle">@${esc(p.handle)}</div>`:''}</div>
     <div class="prof-stats">
-      <div><b>${st}</b><small>🔥 STREAK</small></div>
+      <div><b>${st}</b><small>STREAK</small></div>
       <div><b>${wk}</b><small>THIS WK</small></div>
       <div><b>${total}</b><small>WORKOUTS</small></div>
     </div>
     ${followBtn}
-    ${p.goals?`<div class="pf-sec">🎯 <b>Goals</b> · ${esc(p.goals)}</div>`:''}
-    ${p.quote?`<div class="pf-sec">❝ <b>Quote</b> · ${esc(p.quote)}</div>`:''}
-    ${p.movie?`<div class="pf-sec">🎬 <b>Movie</b> · ${esc(p.movie)}</div>`:''}
+    ${p.goals?`<div class="pf-sec">${icon('target',14)} <b>Goals</b> · ${esc(p.goals)}</div>`:''}
+    ${p.quote?`<div class="pf-sec">${icon('quote',14)} <b>Quote</b> · ${esc(p.quote)}</div>`:''}
+    ${p.movie?`<div class="pf-sec">${icon('film',14)} <b>Movie</b> · ${esc(p.movie)}</div>`:''}
     <div class="sheet-label">Recent workouts</div>
     ${ (days&&days.length) ? days.slice(0,20).map(profileWorkoutCard).join('') : `<div class="hint">${(isMe||amFollowing)?'No completed workouts yet.':'Follow to see their workouts.'}</div>` }`;
   const fb=wrap.querySelector('#pvFollow'); if(fb) fb.onclick=async()=>{ fb.disabled=true; fb.textContent='…';
     const err=await window.MGSync.follow(fb.dataset.h);
-    if(err){ fb.disabled=false; fb.textContent='Follow'; toast('⚠️ '+err); }
-    else { close(); toast('✅ Followed'); if(TAB==='feed') paintFeedPane(); } };
+    if(err){ fb.disabled=false; fb.textContent='Follow'; toast(err); }
+    else { close(); toast('Followed'); if(TAB==='feed') paintFeedPane(); } };
   const ub=wrap.querySelector('#pvUnfollow'); if(ub) ub.onclick=async()=>{ ub.disabled=true;
     await window.MGSync.unfollow(id); close(); toast('Unfollowed'); if(TAB==='feed') paintFeedPane(); };
 }
