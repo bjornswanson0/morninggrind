@@ -738,7 +738,13 @@ function paintFeedPane(){
       if(!err){ $('#followHandle').value=''; loadProfileCard(); loadDiscover(); } };
     loadProfileCard(); loadDiscover();
   } else {
-    el.innerHTML=`<div id="feedList"><div class="card"><div class="hint">Loading feed…</div></div></div>`;
+    el.innerHTML=`
+      <div class="feed-bar"><button class="feed-refresh" id="feedRefresh" aria-label="Refresh feed"><span class="ref-ico">↻</span> Refresh</button></div>
+      <div id="feedList"><div class="card"><div class="hint">Loading feed…</div></div></div>`;
+    const rb=$('#feedRefresh'); if(rb) rb.onclick=async()=>{
+      if(rb.disabled) return; rb.disabled=true; rb.classList.add('spinning');
+      await loadFeed(); rb.disabled=false; rb.classList.remove('spinning'); toast('Feed updated');
+    };
     loadFeed();
   }
 }
