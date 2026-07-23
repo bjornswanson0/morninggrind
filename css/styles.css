@@ -284,6 +284,8 @@ input::placeholder,textarea::placeholder{color:var(--muted); opacity:1}
 .feed-seg{margin-bottom:14px}
 .feed-seg button{flex:1; font-size:14px; padding:11px}
 .fc-pct{flex:none; font-size:13px; font-weight:700; color:var(--blue3); background:var(--sky); padding:5px 10px; border-radius:4px; font-variant-numeric:tabular-nums}
+.fc-edit{flex:none; display:inline-flex; align-items:center; justify-content:center; margin-left:2px; padding:6px; border:1px solid var(--line); border-radius:6px; background:transparent; color:var(--blue3); cursor:pointer; transition:transform .12s, background .15s}
+.fc-edit:active{transform:scale(.9); background:var(--soft)}
 .fc-stats{display:flex; flex-wrap:wrap; gap:10px 14px; margin-top:12px; padding-top:12px; border-top:1px solid var(--line); font-size:12.5px; font-weight:600; color:var(--sub)}
 .fc-nodeb{margin-top:12px; font-size:13px; color:var(--muted); font-weight:500; font-style:italic}
 .fc-deb{margin-top:12px; font-size:14px; font-weight:700; color:var(--ink); background:var(--soft); border-radius:4px; padding:12px 14px}
@@ -347,6 +349,12 @@ canvas{width:100%; height:180px; display:block}
 .ds-badge.done{background:var(--okbg); color:var(--ok)}
 .ds-row{display:flex; justify-content:space-between; align-items:center; padding:11px 2px; border-bottom:1px solid var(--line); font-size:15px; font-weight:500}
 .ds-row:last-child{border-bottom:none}
+.ds-ex{padding:12px 2px; border-bottom:1px solid var(--line)}
+.ds-ex:last-child{border-bottom:none}
+.ds-ex .ds-row{border-bottom:none; padding:0}
+.ds-ex .dots{margin-top:9px}
+.ds-ex-done{opacity:.55}
+.ds-load{font-weight:700; color:var(--tan-deep); font-size:12px; font-variant-numeric:tabular-nums; margin-left:4px}
 .ds-sets{font-weight:700; color:var(--muted); font-size:13px; font-variant-numeric:tabular-nums}
 .ds-sets.full{color:var(--ok)}
 .ds-debrief{font-size:15px; font-weight:700; color:var(--ink); background:var(--soft); border-radius:4px; padding:13px 15px}

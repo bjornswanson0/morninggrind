@@ -648,42 +648,59 @@ function drawCalendar(){
   cal.querySelectorAll('.d[data-date]').forEach(t=> t.onclick=()=>openDaySheet(t.dataset.date));
 }
 
+// Day-detail = editable log for any past day (reached from the Progress calendar
+// and from your own Feed posts). Tap set dots to fix what you logged; toggle
+// completion; add/edit the debrief. Everything saves and re-syncs.
 function openDaySheet(k){
-  const log = LOGS[k] || {};
-  const sess = sessionFor(k);
-  const dObj = new Date(k+'T12:00');
-  const dstr = dObj.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
-  const w = (WEIGHTS.find(x=>x.date===k)||{}).w;
-  const rows = sess.ex.map((e,i)=>{
-    const opts=optionsFor(e); const idx=(log.swaps&&log.swaps[i]!=null)?log.swaps[i]:(log.sessionOverride?0:defaultIdx(e,i,k)); const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
-    const tg=target(e), done=Math.min((log.sets&&log.sets[i])||0,tg);
-    return `<div class="ds-row"><span>${pick.name}</span><span class="ds-sets ${done>=tg&&done>0?'full':''}">${done}/${tg}</span></div>`;
-  }).join('');
-  const d=log.debrief;
-  const debriefHTML = d ? `<div class="sheet-label">${icon('clipboard')} Debrief</div>
-      <div class="ds-debrief">${[d.rating?feelLabel(d.rating):'',d.effort,d.energy?d.energy+' energy':''].filter(Boolean).join(' · ')||'Logged'}${d.notes?`<div class="ds-notes">“${d.notes}”</div>`:''}</div>` : '';
-  const badge = log.done ? `<span class="ds-badge done">${icon('check',12)} Completed</span>`
-    : (log.sets && log.sets.some(x=>x>0)) ? '<span class="ds-badge">Partial</span>'
-    : '<span class="ds-badge">Not logged</span>';
   const wrap=document.createElement('div'); wrap.className='sheet-backdrop';
-  wrap.innerHTML=`<div class="sheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-title">${dstr}</div>
-    <div class="ds-meta">${sess.title} &nbsp; ${badge}${w!=null?` &nbsp; ${icon('scale',13)} ${w} lb`:''}</div>
-    <div class="sheet-label">Workout</div>
-    ${rows}
-    ${debriefHTML}
-    <div class="ds-actions">
-      <button class="btn ${log.done?'btn-ghost':'btn-primary'}" id="dsToggle">${log.done?icon('undo',15)+' Mark not completed':icon('check',15)+' Mark completed'}</button>
-      <button class="btn btn-ghost" id="dsDebrief">${log.debrief?icon('pencil',15)+' Edit debrief':icon('plus',15)+' Add debrief'}</button>
-    </div>
-    <button class="sheet-skip" id="dsClose">Close</button>
-  </div>`;
   document.body.appendChild(wrap); requestAnimationFrame(()=>wrap.classList.add('show'));
-  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); };
-  wrap.querySelector('#dsClose').onclick=close; wrap.onclick=e=>{ if(e.target===wrap) close(); };
-  wrap.querySelector('#dsToggle').onclick=()=>{ const l=ensureLog(k); l.done=!l.done; if(l.done) l.sets=sess.ex.map(e=>target(e)); save(); close(); render(); toast(l.done?'Marked complete':'Marked not complete'); };
-  wrap.querySelector('#dsDebrief').onclick=()=>{ close(); openDebrief(k); };
+  let dirty=false;
+  const close=()=>{ wrap.classList.remove('show'); setTimeout(()=>wrap.remove(),220); if(dirty && typeof render==='function') render(); };
+  const recomputeDone=(l,sess)=>{ l.done = sess.ex.length>0 && sess.ex.every((e,idx)=>(l.sets[idx]||0)>=target(e)); };
+  function paint(){
+    const log = LOGS[k] || {};
+    const sess = sessionFor(k);
+    const dObj = new Date(k+'T12:00');
+    const dstr = dObj.toLocaleDateString('en-US',{weekday:'long', month:'long', day:'numeric'});
+    const w = (WEIGHTS.find(x=>x.date===k)||{}).w;
+    const rows = sess.ex.map((e,i)=>{
+      const opts=optionsFor(e); const idx=(log.swaps&&log.swaps[i]!=null)?log.swaps[i]:(log.sessionOverride?0:defaultIdx(e,i,k)); const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
+      const tg=target(e), done=Math.min((log.sets&&log.sets[i])||0,tg);
+      const dots=Array.from({length:tg},(_,j)=>`<span class="dot ${j<done?'on':''}" data-ex="${i}" data-dot="${j}"></span>`).join('');
+      return `<div class="ds-ex ${done>=tg&&done>0?'ds-ex-done':''}">
+        <div class="ds-row"><span>${esc(pick.name)} <span class="ds-load">${fmtLoad(pick.load)}</span></span><span class="ds-sets ${done>=tg&&done>0?'full':''}">${done}/${tg}</span></div>
+        <div class="dots">${dots}</div></div>`;
+    }).join('');
+    const d=log.debrief;
+    const debriefHTML = d ? `<div class="sheet-label">${icon('clipboard')} Debrief</div>
+        <div class="ds-debrief">${[d.rating?feelLabel(d.rating):'',d.effort,d.energy?d.energy+' energy':''].filter(Boolean).join(' · ')||'Logged'}${d.notes?`<div class="ds-notes">“${esc(d.notes)}”</div>`:''}</div>` : '';
+    const badge = log.done ? `<span class="ds-badge done">${icon('check',12)} Completed</span>`
+      : (log.sets && log.sets.some(x=>x>0)) ? '<span class="ds-badge">Partial</span>'
+      : '<span class="ds-badge">Not logged</span>';
+    wrap.innerHTML=`<div class="sheet">
+      <div class="sheet-handle"></div>
+      <div class="sheet-title">${dstr}</div>
+      <div class="ds-meta">${sess.title} &nbsp; ${badge}${w!=null?` &nbsp; ${icon('scale',13)} ${w} lb`:''}</div>
+      <div class="sheet-label">Workout — tap the dots to adjust your logged sets</div>
+      ${rows}
+      ${debriefHTML}
+      <div class="ds-actions">
+        <button class="btn ${log.done?'btn-ghost':'btn-primary'}" id="dsToggle">${log.done?icon('undo',15)+' Mark not completed':icon('check',15)+' Mark completed'}</button>
+        <button class="btn btn-ghost" id="dsDebrief">${log.debrief?icon('pencil',15)+' Edit debrief':icon('plus',15)+' Add debrief'}</button>
+      </div>
+      <button class="sheet-skip" id="dsClose">Close</button>
+    </div>`;
+    wrap.querySelector('#dsClose').onclick=close;
+    wrap.querySelectorAll('.dot').forEach(dot=> dot.onclick=()=>{
+      const i=+dot.dataset.ex, j=+dot.dataset.dot, l=ensureLog(k);
+      const cur=l.sets[i]||0; l.sets[i]=(j+1===cur)?j:j+1;
+      recomputeDone(l, sessionFor(k)); dirty=true; save(); paint(); });
+    wrap.querySelector('#dsToggle').onclick=()=>{ const l=ensureLog(k), sess2=sessionFor(k);
+      l.done=!l.done; if(l.done) l.sets=sess2.ex.map(e=>target(e)); dirty=true; save(); paint(); toast(l.done?'Marked complete':'Marked not complete'); };
+    wrap.querySelector('#dsDebrief').onclick=()=>{ if(dirty && typeof render==='function') render(); close(); openDebrief(k); };
+  }
+  wrap.onclick=e=>{ if(e.target===wrap) close(); };
+  paint();
 }
 
 /* ---------- Friends / Feed (Strava-style) ---------- */
@@ -817,6 +834,10 @@ async function openProfileEdit(){
 }
 function liftsSummary(it){
   const swaps=it.swaps||{}, sets=it.sets||[], cust=(it.plan&&it.plan.ex)||{}, added=(it.plan&&it.plan.added)||[], removed=(it.plan&&it.plan.removed)||{};
+  // A picked session or AI workout renders as authored (no weekly rotation); a plain
+  // split day rotates its accessories via defaultIdx — same rule the Today view uses,
+  // so the feed shows the exercises the user actually did, not the index-0 originals.
+  const isOverride = !!(it.plan && (it.plan.override || it.plan.custom));
   let base;
   if(it.plan && it.plan.custom && Array.isArray(it.plan.custom.ex)) base=it.plan.custom; // AI custom session
   else { const tag=it.plan&&it.plan.tag; base=(tag && typeof SESSIONS!=='undefined' && SESSIONS[tag]) ? SESSIONS[tag] : SPLIT[new Date(it.d+'T12:00').getDay()]; }
@@ -825,7 +846,9 @@ function liftsSummary(it){
     const isBase = i < base.ex.length;
     if(isBase && removed[i]) return;
     if(isBase && cust[i]){ const c=cust[i]; const tg=(Number.isInteger(+c.sets)&&+c.sets>0)?+c.sets:1; out.push({ name:c.name, load:c.load, done:Math.min(sets[i]||0,tg), tg }); return; }
-    if(isBase){ const opts=optionsFor(e); const idx=swaps[i]||0; const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
+    if(isBase){ const opts=optionsFor(e);
+      const idx=(swaps[i]!=null)?swaps[i]:(isOverride?0:(typeof defaultIdx==='function'?defaultIdx(e,i,it.d):0));
+      const pick=opts[Math.min(idx,opts.length-1)]||{name:e.name,load:e.load};
       const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; out.push({ name:pick.name, load:pick.load, done:Math.min(sets[i]||0,tg), tg }); return; }
     const tg=(Number.isInteger(+e.sets)&&+e.sets>0)?+e.sets:1; out.push({ name:e.name, load:e.load, done:Math.min(sets[i]||0,tg), tg });
   });
@@ -845,11 +868,13 @@ function feedCard(it, prof){
   const liftHTML=shown.length?`<div class="fc-lifts">${shown.map(l=>`<span>${l.name} <b>${fmtLoad(l.load)}</b></span>`).join('')}${lifts.length>8?`<span class="fc-more">+${lifts.length-8} more</span>`:''}</div>`:'';
   const statHTML=`<div class="fc-stats"><span>${icon('dumbbell')} ${exCount} exercises</span><span>${icon('check')} ${doneSets}/${totSets} sets</span><span>${icon('flame')} ${pct}% complete</span></div>`;
   const debHTML=d?`<div class="fc-deb">${d.rating?feelLabel(d.rating):''}${d.effort?' · '+d.effort:''}${d.energy?' · '+d.energy+' energy':''}${d.notes?`<div class="fc-notes">“${d.notes}”</div>`:''}</div>`:`<div class="fc-nodeb">No debrief logged</div>`;
+  const mine = !!(window.MGSync && window.MGSync.myId && window.MGSync.myId()===it.user_id);
   return `<div class="card fc">
     <div class="fc-head" data-uid="${it.user_id}">${avatarEl(prof,'fc')}
-      <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}${(window.MGSync&&window.MGSync.myId&&window.MGSync.myId()===it.user_id)?' <span class="fc-you">You</span>':''}</div>
+      <div style="flex:1; min-width:0"><div class="fc-name">${esc(prof.display_name||('@'+(prof.handle||'friend')))}${mine?' <span class="fc-you">You</span>':''}</div>
         <div class="fc-sub">${when} · ${title}</div></div>
-      <span class="fc-pct">${pct}%</span></div>
+      <span class="fc-pct">${pct}%</span>
+      ${mine?`<button class="fc-edit" data-edit-day="${it.d}" title="Edit this workout" aria-label="Edit this workout">${icon('pencil',15)}</button>`:''}</div>
     ${statHTML}${liftHTML}${debHTML}</div>`;
 }
 async function loadFeed(){
@@ -858,6 +883,7 @@ async function loadFeed(){
   const { items, profiles }=await window.MGSync.feed();
   if(!items.length){ el.innerHTML=`<div class="card"><div class="hint">No completed workouts yet. Finish today’s session and it’ll show up here — and head to the <b>Friends</b> tab to follow people and see theirs too.</div></div>`; return; }
   el.innerHTML=items.map(it=>feedCard(it, profiles[it.user_id]||{})).join('');
+  el.querySelectorAll('.fc-edit[data-edit-day]').forEach(b=>{ b.onclick=(e)=>{ e.stopPropagation(); openDaySheet(b.dataset.editDay); }; });
   el.querySelectorAll('.fc-head[data-uid]').forEach(h=>{ h.onclick=()=>openProfile(h.dataset.uid); });
 }
 function profileWorkoutCard(it){
